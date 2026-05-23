@@ -4,13 +4,13 @@ import { useStore } from "@/hooks/use-store";
 
 export function MobileTabBar() {
   const { cartCount, wishlist } = useStore();
-  const items = [
+  const items: { to: string; icon: typeof Home; label: string; badge?: number }[] = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/shop", icon: Search, label: "Shop" },
     { to: "/wishlist", icon: Heart, label: "Wishlist", badge: wishlist.length },
     { to: "/cart", icon: ShoppingBag, label: "Cart", badge: cartCount },
     { to: "/profile", icon: User, label: "You" },
-  ] as const;
+  ];
 
   return (
     <nav className="fixed inset-x-3 bottom-3 z-40 md:hidden">
