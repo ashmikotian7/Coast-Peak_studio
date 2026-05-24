@@ -11,6 +11,7 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { StoreProvider } from "@/hooks/use-store";
+import { I18nProvider } from "@/hooks/use-i18n";
 
 function NotFoundComponent() {
   return (
@@ -54,11 +55,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SK — Handcrafted Luxury Jewelry" },
-      { name: "description", content: "SK is a boutique studio creating handcrafted luxury jewelry — heirlooms in gold and amethyst, made in small batches." },
-      { name: "author", content: "SK" },
-      { property: "og:title", content: "SK — Handcrafted Luxury Jewelry" },
-      { property: "og:description", content: "Heirlooms in gold and amethyst, handcrafted in small batches." },
+      { title: "Coast & Peak Studio — Handcrafted Artisan Jewelry" },
+      { name: "description", content: "Coast & Peak Studio — a boutique atelier creating artistic handcrafted jewelry from artificial stones, resin and crystal. Made in small batches." },
+      { name: "author", content: "Coast & Peak Studio" },
+      { property: "og:title", content: "Coast & Peak Studio — Handcrafted Artisan Jewelry" },
+      { property: "og:description", content: "Artistic, handcrafted artificial jewelry — designed and finished in small batches." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -97,21 +98,23 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <StoreProvider>
-          <Outlet />
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                fontFamily: "var(--font-serif)",
-                background: "var(--popover)",
-                color: "var(--popover-foreground)",
-                border: "1px solid var(--border)",
-                borderRadius: "16px",
-              },
-            }}
-          />
-        </StoreProvider>
+        <I18nProvider>
+          <StoreProvider>
+            <Outlet />
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                style: {
+                  fontFamily: "var(--font-serif)",
+                  background: "var(--popover)",
+                  color: "var(--popover-foreground)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "16px",
+                },
+              }}
+            />
+          </StoreProvider>
+        </I18nProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
