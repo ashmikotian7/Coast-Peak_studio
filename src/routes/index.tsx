@@ -306,7 +306,7 @@ function Gallery() {
               href="#"
               className="group relative aspect-square overflow-hidden rounded-2xl"
             >
-              <img src={src} alt="Customer wearing SK jewelry" loading="lazy" width={400} height={400} className="h-full w-full object-cover transition-transform duration-700 ease-luxe group-hover:scale-110" />
+              <img src={src} alt="Customer wearing Coast &amp; Peak jewelry" loading="lazy" width={400} height={400} className="h-full w-full object-cover transition-transform duration-700 ease-luxe group-hover:scale-110" />
               <div className="absolute inset-0 bg-royal-gradient opacity-0 transition-opacity duration-300 group-hover:opacity-40" />
             </a>
           ))}
