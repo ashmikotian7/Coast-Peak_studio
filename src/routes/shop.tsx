@@ -8,10 +8,10 @@ import { SlidersHorizontal } from "lucide-react";
 export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
-      { title: "Shop — SK Handcrafted Jewelry" },
-      { name: "description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by SK." },
-      { property: "og:title", content: "Shop — SK Handcrafted Jewelry" },
-      { property: "og:description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by SK." },
+      { title: "Shop — Coast & Peak Studio" },
+      { name: "description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by Coast & Peak Studio." },
+      { property: "og:title", content: "Shop — Coast & Peak Studio" },
+      { property: "og:description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by Coast & Peak Studio." },
     ],
   }),
   component: ShopPage,
@@ -33,7 +33,7 @@ function ShopPage() {
       <section className="bg-lavender-gradient pb-12 pt-32 md:pt-40">
         <div className="mx-auto max-w-7xl px-6 text-center md:px-12">
           <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--royal)]">The collection</p>
-          <h1 className="mt-3 font-display text-5xl md:text-7xl">Shop SK</h1>
+          <h1 className="mt-3 font-display text-5xl md:text-7xl">Shop Coast &amp; Peak</h1>
           <p className="mx-auto mt-4 max-w-xl font-serif text-lg text-muted-foreground">
             Each piece is hand-finished in our studio. Quantities are kept small on purpose.
           </p>

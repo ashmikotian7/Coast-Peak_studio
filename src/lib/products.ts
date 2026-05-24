@@ -23,7 +23,7 @@ export const products: Product[] = [
     category: "earrings",
     tag: "bestseller",
     description:
-      "Hand-set teardrop amethysts cradled in 18k gold vermeil. Each pair is finished and signed by our artisan.",
+      "Hand-set teardrop amethyst crystals cradled in a hypoallergenic alloy. Each pair is finished and signed by our artisan.",
     stock: 7,
   },
   {
@@ -34,7 +34,7 @@ export const products: Product[] = [
     category: "necklaces",
     tag: "new",
     description:
-      "A single faceted amethyst suspended on a delicate gold chain — the everyday heirloom.",
+      "A single faceted crystal teardrop suspended on a delicate woven chain — the everyday heirloom.",
     stock: 12,
   },
   {
@@ -45,7 +45,7 @@ export const products: Product[] = [
     category: "rings",
     tag: "limited",
     description:
-      "Three stackable bands, each crowned with a hand-cut lavender sapphire. Limited to 50 sets.",
+      "Three stackable bands, each crowned with a hand-cut lavender crystal. Limited to 50 sets.",
     stock: 3,
   },
   {
@@ -56,7 +56,7 @@ export const products: Product[] = [
     category: "bracelets",
     tag: "bestseller",
     description:
-      "An engraved gold cuff inspired by old-world florals, accented with cabochon amethyst.",
+      "An engraved alloy cuff inspired by old-world florals, accented with cabochon amethyst resin.",
     stock: 5,
   },
   {
@@ -65,7 +65,7 @@ export const products: Product[] = [
     price: 268,
     image: earrings,
     category: "earrings",
-    description: "Deep violet pear-cut stones on hand-forged hooks.",
+    description: "Deep violet pear-cut crystal stones on hand-forged hooks.",
     stock: 9,
   },
   {
@@ -84,7 +84,7 @@ export const products: Product[] = [
     image: rings,
     tag: "new",
     category: "rings",
-    description: "A single petal-set stone on a brushed gold band.",
+    description: "A single petal-set crystal on a brushed alloy band.",
     stock: 11,
   },
   {
@@ -93,7 +93,7 @@ export const products: Product[] = [
     price: 388,
     image: bracelet,
     category: "bracelets",
-    description: "Smooth gold cuff with a single inset amethyst.",
+    description: "Smooth artisan cuff with a single inset amethyst crystal.",
     stock: 6,
   },
 ];
@@ -101,6 +101,6 @@ export const products: Product[] = [
 export const collections = [
   { slug: "earrings", name: "Earrings", tagline: "Whispers for the ear" },
   { slug: "necklaces", name: "Necklaces", tagline: "Worn close to the heart" },
-  { slug: "rings", name: "Rings", tagline: "Promises in gold" },
+  { slug: "rings", name: "Rings", tagline: "Promises in crystal" },
   { slug: "bracelets", name: "Bracelets", tagline: "Heirlooms in motion" },
 ];

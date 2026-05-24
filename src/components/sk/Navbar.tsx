@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Heart, ShoppingBag, User, Search, Menu, X, Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
+import { LanguageDropdown } from "./LanguageDropdown";
 import { useStore } from "@/hooks/use-store";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -30,6 +31,15 @@ export function Navbar() {
     document.body.style.overflow = open ? "hidden" : "";
   }, [open]);
 
+  // When not scrolled, the nav floats over the dark hero — use ivory text.
+  // When scrolled, glass over light bg — use foreground.
+  const linkBase = scrolled
+    ? "text-foreground/85 hover:text-foreground"
+    : "text-white/95 hover:text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.35)]";
+  const iconBase = scrolled
+    ? "text-foreground/80 hover:bg-secondary hover:text-foreground"
+    : "text-white hover:bg-white/15";
+
   return (
     <>
       <header
@@ -38,7 +48,7 @@ export function Navbar() {
         }`}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:h-20 md:px-8">
-          <Link to="/" aria-label="SK Home">
+          <Link to="/" aria-label="Coast & Peak Studio Home">
             <Logo />
           </Link>
 
@@ -47,8 +57,8 @@ export function Navbar() {
               <Link
                 key={l.to}
                 to={l.to}
-                className="story-link font-serif text-base tracking-wide text-foreground/80 hover:text-foreground"
-                activeProps={{ className: "story-link font-serif text-base tracking-wide text-foreground" }}
+                className={`story-link font-serif text-base tracking-wide ${linkBase}`}
+                activeProps={{ className: `story-link font-serif text-base tracking-wide font-semibold ${scrolled ? "text-foreground" : "text-white"}` }}
               >
                 {l.label}
               </Link>
@@ -56,30 +66,33 @@ export function Navbar() {
           </nav>
 
           <div className="flex items-center gap-1 md:gap-2">
-            <IconButton aria-label="Search" onClick={() => setSearchOpen(true)}>
+            <div className="hidden md:block">
+              <LanguageDropdown onLight={!scrolled} />
+            </div>
+            <IconButton aria-label="Search" onClick={() => setSearchOpen(true)} className={iconBase}>
               <Search className="h-[18px] w-[18px]" />
             </IconButton>
-            <IconButton aria-label="Toggle theme" onClick={toggle}>
+            <IconButton aria-label="Toggle theme" onClick={toggle} className={iconBase}>
               {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
             </IconButton>
             <Link to="/wishlist" className="hidden md:inline-flex">
-              <IconButton aria-label="Wishlist">
+              <IconButton aria-label="Wishlist" className={iconBase}>
                 <Heart className="h-[18px] w-[18px]" />
                 {wishlist.length > 0 && <Badge>{wishlist.length}</Badge>}
               </IconButton>
             </Link>
             <Link to="/cart">
-              <IconButton aria-label="Cart">
+              <IconButton aria-label="Cart" className={iconBase}>
                 <ShoppingBag className="h-[18px] w-[18px]" />
                 {cartCount > 0 && <Badge>{cartCount}</Badge>}
               </IconButton>
             </Link>
             <Link to="/profile" className="hidden md:inline-flex">
-              <IconButton aria-label="Profile">
+              <IconButton aria-label="Profile" className={iconBase}>
                 <User className="h-[18px] w-[18px]" />
               </IconButton>
             </Link>
-            <IconButton aria-label="Menu" className="md:hidden" onClick={() => setOpen(true)}>
+            <IconButton aria-label="Menu" className={`md:hidden ${iconBase}`} onClick={() => setOpen(true)}>
               <Menu className="h-5 w-5" />
             </IconButton>
           </div>
@@ -118,22 +131,25 @@ export function Navbar() {
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                className="font-display text-5xl animate-fade-up"
+                className="font-display text-5xl animate-fade-up text-white"
                 style={{ animationDelay: `${0.1 + i * 0.08}s` }}
               >
                 {l.label}
               </Link>
             ))}
-            <Link to="/wishlist" onClick={() => setOpen(false)} className="font-display text-5xl animate-fade-up" style={{ animationDelay: "0.42s" }}>
+            <Link to="/wishlist" onClick={() => setOpen(false)} className="font-display text-5xl text-white animate-fade-up" style={{ animationDelay: "0.42s" }}>
               Wishlist
             </Link>
-            <Link to="/profile" onClick={() => setOpen(false)} className="font-display text-5xl animate-fade-up" style={{ animationDelay: "0.5s" }}>
+            <Link to="/profile" onClick={() => setOpen(false)} className="font-display text-5xl text-white animate-fade-up" style={{ animationDelay: "0.5s" }}>
               Profile
             </Link>
           </nav>
+          <div className="mt-8">
+            <LanguageDropdown onLight />
+          </div>
           <div className="mt-auto flex items-center justify-between text-sm text-white/60">
             <span>Handcrafted in small batches</span>
-            <span>SK ©</span>
+            <span>Coast &amp; Peak ©</span>
           </div>
         </div>
       </div>
@@ -187,7 +203,7 @@ function IconButton({
   return (
     <button
       {...props}
-      className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground/80 transition-all duration-300 ease-luxe hover:bg-secondary hover:text-foreground ${className}`}
+      className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 ease-luxe ${className}`}
     >
       {children}
     </button>

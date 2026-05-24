@@ -3,7 +3,7 @@ import { Check, Package, Sparkles, Truck, Home } from "lucide-react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 
 export const Route = createFileRoute("/track")({
-  head: () => ({ meta: [{ title: "Track Order — SK" }] }),
+  head: () => ({ meta: [{ title: "Track Order — Coast & Peak Studio" }] }),
   component: TrackPage,
 });
 
@@ -21,7 +21,7 @@ export default function TrackPage() {
     <SiteLayout>
       <section className="bg-lavender-gradient pt-32 pb-12 md:pt-40">
         <div className="mx-auto max-w-7xl px-6 text-center md:px-12">
-          <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--royal)]">Order SK-2026-0042</p>
+          <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--royal)]">Order CP-2026-0042</p>
           <h1 className="mt-3 font-display text-5xl md:text-6xl">Tracking your treasure</h1>
         </div>
       </section>

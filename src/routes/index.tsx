@@ -10,10 +10,10 @@ import { products, collections } from "@/lib/products";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SK — Handcrafted Luxury Jewelry" },
-      { name: "description", content: "Heirlooms in gold and amethyst, handcrafted in small batches by SK." },
-      { property: "og:title", content: "SK — Handcrafted Luxury Jewelry" },
-      { property: "og:description", content: "Heirlooms in gold and amethyst, handcrafted in small batches by SK." },
+      { title: "Coast & Peak Studio — Handcrafted Artisan Jewelry" },
+      { name: "description", content: "Heirloom-style handcrafted jewelry in amethyst and crystal — made slowly by Coast & Peak Studio." },
+      { property: "og:title", content: "Coast & Peak Studio — Handcrafted Artisan Jewelry" },
+      { property: "og:description", content: "Heirloom-style handcrafted jewelry in amethyst and crystal — made slowly by Coast & Peak Studio." },
     ],
   }),
   component: Index,
@@ -48,16 +48,16 @@ function Hero() {
 
       <div className="relative mx-auto grid min-h-[100svh] max-w-7xl grid-cols-1 items-center gap-8 px-6 pt-28 md:grid-cols-2 md:px-12 md:pt-32">
         <div className="z-10">
-          <p className="font-serif text-xs uppercase tracking-[0.4em] text-[var(--gold)] animate-fade-up">
-            — Maison SK · Est. petite atelier
+          <p className="font-serif text-xs uppercase tracking-[0.4em] text-[var(--lavender)] animate-fade-up">
+            — Coast &amp; Peak Studio · A petite atelier
           </p>
           <h1 className="mt-6 font-display text-[clamp(3rem,9vw,7rem)] font-light leading-[0.95] animate-fade-up" style={{ animationDelay: "0.1s" }}>
             Worn like a <em className="not-italic text-gold-gradient">whisper</em>.
             <br /> Kept like a vow.
           </h1>
           <p className="mt-8 max-w-md font-serif text-lg leading-relaxed text-white/75 animate-fade-up" style={{ animationDelay: "0.25s" }}>
-            Handcrafted heirlooms in gold and amethyst. Made slowly,
-            in our studio, for the women who collect quiet beauty.
+            Handcrafted artistic jewelry in amethyst and crystal. Made slowly,
+            in our studio, for those who collect quiet beauty.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4 animate-fade-up" style={{ animationDelay: "0.4s" }}>
             <Link
@@ -82,8 +82,8 @@ function Hero() {
           </div>
         </div>
 
-        <div className="relative h-[60svh] md:h-[80svh]">
-          <div className="absolute inset-0 animate-reveal-clip rounded-[120px_28px_120px_28px] overflow-hidden shadow-luxe">
+        <div className="relative h-[60svh] [perspective:1200px] md:h-[80svh]">
+          <div className="tilt-3d absolute inset-0 animate-reveal-clip rounded-[120px_28px_120px_28px] overflow-hidden shadow-luxe">
             <img
               src={heroImg}
               alt="Handcrafted amethyst ring on velvet"
@@ -92,8 +92,8 @@ function Hero() {
               className="h-full w-full object-cover"
             />
           </div>
-          <div className="absolute -left-6 top-10 z-20 hidden glass rounded-2xl p-4 shadow-luxe animate-fade-up md:block" style={{ animationDelay: "0.7s" }}>
-            <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--gold)]">Maker</p>
+          <div className="absolute -left-6 top-10 z-20 hidden glass rounded-2xl p-4 shadow-luxe animate-fade-up float-3d md:block" style={{ animationDelay: "0.7s" }}>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--lavender)]">Maker</p>
             <p className="font-display text-lg">Sahana K. · Atelier</p>
           </div>
           <div className="absolute -bottom-6 right-4 z-20 glass rounded-2xl px-5 py-4 shadow-luxe animate-fade-up" style={{ animationDelay: "0.9s" }}>
@@ -212,10 +212,10 @@ function ArtisanStory() {
           </div>
         </div>
         <div>
-          <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--gold)]">The hand behind SK</p>
+          <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--lavender)]">The hand behind Coast &amp; Peak</p>
           <h2 className="mt-4 font-display text-5xl md:text-6xl">A studio,<br /> not a factory.</h2>
           <p className="mt-6 max-w-md font-serif text-lg leading-relaxed text-white/75">
-            Every SK piece is hand-finished by Sahana in her Bangalore atelier.
+            Every Coast &amp; Peak piece is hand-finished by Sahana in her Bangalore atelier.
             We work in small batches — sometimes only three of a kind — so that
             each ring, pendant and cuff carries a fingerprint, a flaw, a soul.
           </p>
@@ -294,7 +294,7 @@ function Gallery() {
       <div className="mx-auto max-w-7xl px-6 md:px-12">
         <div className="mb-10 flex items-end justify-between">
           <div>
-            <p className="font-serif text-xs uppercase tracking-[0.3em] text-muted-foreground">@maison.sk</p>
+            <p className="font-serif text-xs uppercase tracking-[0.3em] text-muted-foreground">@coastandpeak.studio</p>
             <h2 className="mt-3 font-display text-4xl md:text-5xl">Worn by you</h2>
           </div>
           <a href="#" className="story-link font-serif text-sm">Follow on Instagram</a>
@@ -306,7 +306,7 @@ function Gallery() {
               href="#"
               className="group relative aspect-square overflow-hidden rounded-2xl"
             >
-              <img src={src} alt="Customer wearing SK jewelry" loading="lazy" width={400} height={400} className="h-full w-full object-cover transition-transform duration-700 ease-luxe group-hover:scale-110" />
+              <img src={src} alt="Customer wearing Coast &amp; Peak jewelry" loading="lazy" width={400} height={400} className="h-full w-full object-cover transition-transform duration-700 ease-luxe group-hover:scale-110" />
               <div className="absolute inset-0 bg-royal-gradient opacity-0 transition-opacity duration-300 group-hover:opacity-40" />
             </a>
           ))}
@@ -321,12 +321,12 @@ function LimitedEdition() {
     <section className="relative overflow-hidden bg-hero-gradient py-24 text-[var(--ivory)] md:py-32">
       <FloatingParticles count={14} />
       <div className="relative mx-auto max-w-5xl px-6 text-center md:px-12">
-        <p className="font-serif text-xs uppercase tracking-[0.4em] text-[var(--gold)]">Limited edition</p>
+        <p className="font-serif text-xs uppercase tracking-[0.4em] text-[var(--lavender)]">Limited edition</p>
         <h2 className="mt-5 font-display text-5xl leading-[1.05] md:text-7xl">
           Only fifty <em className="not-italic text-gold-gradient">Lavender Stacks</em><br /> will ever exist.
         </h2>
         <p className="mx-auto mt-6 max-w-xl font-serif text-lg text-white/75">
-          Hand-cut lavender sapphires set in three brushed-gold bands. Numbered, signed, and shipped in a custom velvet vault.
+          Hand-cut lavender crystals set in three brushed alloy bands. Numbered, signed, and shipped in a custom velvet vault.
         </p>
         <Link
           to="/product/$id"
@@ -344,7 +344,7 @@ function Newsletter() {
   return (
     <section className="bg-background py-20 md:py-28">
       <div className="mx-auto max-w-3xl px-6 text-center md:px-12">
-        <p className="font-serif text-xs uppercase tracking-[0.3em] text-muted-foreground">The SK letter</p>
+        <p className="font-serif text-xs uppercase tracking-[0.3em] text-muted-foreground">The Coast &amp; Peak letter</p>
         <h2 className="mt-4 font-display text-4xl md:text-5xl">Receive our quiet dispatches.</h2>
         <p className="mt-4 font-serif text-lg text-muted-foreground">
           Atelier notes, new drops, and early access — once a fortnight. Never more.
