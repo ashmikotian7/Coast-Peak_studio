@@ -10,11 +10,11 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
 
   return (
     <div
-      className="group relative animate-fade-up"
+      className="group relative animate-fade-up [perspective:1200px]"
       style={{ animationDelay: `${index * 0.08}s` }}
     >
       <Link to="/product/$id" params={{ id: product.id }} className="block">
-        <div className="relative overflow-hidden rounded-[28px] bg-muted shadow-soft">
+        <div className="tilt-3d relative overflow-hidden rounded-[28px] bg-muted shadow-soft depth-3d">
           {product.tag && (
             <span className="absolute left-4 top-4 z-10 rounded-full bg-gold-gradient px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[oklch(0.2_0.06_305)] shadow-gold">
               {product.tag}
