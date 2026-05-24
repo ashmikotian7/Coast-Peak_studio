@@ -226,6 +226,32 @@
     transform: scaleX(1);
     transform-origin: left;
   }
+
+  /* 3D depth utilities */
+  .tilt-3d {
+    transform-style: preserve-3d;
+    transition: transform 600ms var(--ease-luxe), box-shadow 600ms var(--ease-luxe);
+    will-change: transform;
+  }
+  .tilt-3d:hover {
+    transform: perspective(900px) rotateX(4deg) rotateY(-6deg) translateZ(12px);
+    box-shadow: var(--shadow-luxe);
+  }
+  .depth-3d {
+    box-shadow:
+      0 1px 0 color-mix(in oklab, var(--ivory) 60%, transparent) inset,
+      0 -1px 0 color-mix(in oklab, var(--violet-deep) 18%, transparent) inset,
+      0 25px 60px -18px color-mix(in oklab, var(--royal) 40%, transparent),
+      0 10px 24px -10px color-mix(in oklab, var(--wine) 30%, transparent);
+  }
+  .float-3d {
+    animation: float-3d 6s ease-in-out infinite;
+  }
+}
+
+@keyframes float-3d {
+  0%, 100% { transform: translateY(0) rotateX(0) rotateY(0); }
+  50% { transform: translateY(-8px) rotateX(2deg) rotateY(-2deg); }
 }
 
 @keyframes shimmer {
