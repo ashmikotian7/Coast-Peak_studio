@@ -3,7 +3,7 @@ import { Check, Package, Sparkles, Truck, Home } from "lucide-react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 
 export const Route = createFileRoute("/track")({
-  head: () => ({ meta: [{ title: "Track Order — Coast &amp; Peak Studio" }] }),
+  head: () => ({ meta: [{ title: "Track Order — Coast & Peak Studio" }] }),
   component: TrackPage,
 });
 

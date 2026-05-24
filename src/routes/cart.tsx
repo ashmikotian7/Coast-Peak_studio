@@ -4,7 +4,7 @@ import { SiteLayout } from "@/components/sk/SiteLayout";
 import { useStore } from "@/hooks/use-store";
 
 export const Route = createFileRoute("/cart")({
-  head: () => ({ meta: [{ title: "Cart — Coast &amp; Peak Studio" }, { name: "description", content: "Your Coast &amp; Peak cart" }] }),
+  head: () => ({ meta: [{ title: "Cart — Coast & Peak Studio" }, { name: "description", content: "Your Coast & Peak cart" }] }),
   component: CartPage,
 });
 

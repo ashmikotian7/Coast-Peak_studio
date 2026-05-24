@@ -8,9 +8,9 @@ import { SlidersHorizontal } from "lucide-react";
 export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
-      { title: "Shop — Coast &amp; Peak Studio" },
+      { title: "Shop — Coast & Peak Studio" },
       { name: "description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by Coast &amp; Peak Studio." },
-      { property: "og:title", content: "Shop — Coast &amp; Peak Studio" },
+      { property: "og:title", content: "Shop — Coast & Peak Studio" },
       { property: "og:description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by Coast &amp; Peak Studio." },
     ],
   }),
