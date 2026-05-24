@@ -15,12 +15,12 @@ export function Footer() {
           <div className="md:col-span-5">
             <Logo />
             <p className="mt-6 max-w-sm font-serif text-lg leading-relaxed text-white/75">
-              Heirlooms in the making. Each piece by SK is hand-finished in a small
-              studio, signed, and sent in our signature velvet box.
+              Heirlooms in the making. Each piece by Coast &amp; Peak Studio is hand-finished in a small
+              atelier, signed, and sent in our signature velvet box.
             </p>
             <form className="mt-8 flex max-w-md items-center gap-2 glass rounded-full p-1.5">
               <input
-                placeholder="Join the SK letter"
+                placeholder="Join the Coast & Peak letter"
                 className="flex-1 bg-transparent px-4 text-sm text-white placeholder:text-white/60 outline-none"
               />
               <button
@@ -53,7 +53,7 @@ export function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col items-start justify-between gap-6 border-t border-white/15 pt-8 md:flex-row md:items-center">
-          <p className="font-serif text-sm text-white/60">© {new Date().getFullYear()} SK — Handcrafted with care.</p>
+          <p className="font-serif text-sm text-white/60">© {new Date().getFullYear()} Coast &amp; Peak Studio — Handcrafted with care.</p>
           <div className="flex items-center gap-3">
             {[Instagram, Twitter, Facebook].map((Icon, i) => (
               <a
