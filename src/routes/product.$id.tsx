@@ -15,9 +15,9 @@ export const Route = createFileRoute("/product/$id")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${loaderData?.product.name ?? "Product"} — Coast &amp; Peak Studio` },
-      { name: "description", content: loaderData?.product.description ?? "Handcrafted artisan jewelry by Coast &amp; Peak Studio." },
-      { property: "og:title", content: `${loaderData?.product.name ?? "Product"} — Coast &amp; Peak Studio` },
+      { title: `${loaderData?.product.name ?? "Product"} — Coast & Peak Studio` },
+      { name: "description", content: loaderData?.product.description ?? "Handcrafted artisan jewelry by Coast & Peak Studio." },
+      { property: "og:title", content: `${loaderData?.product.name ?? "Product"} — Coast & Peak Studio` },
       { property: "og:description", content: loaderData?.product.description ?? "" },
       { property: "og:image", content: loaderData?.product.image ?? "" },
     ],

@@ -9,9 +9,9 @@ export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
       { title: "Shop — Coast & Peak Studio" },
-      { name: "description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by Coast &amp; Peak Studio." },
+      { name: "description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by Coast & Peak Studio." },
       { property: "og:title", content: "Shop — Coast & Peak Studio" },
-      { property: "og:description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by Coast &amp; Peak Studio." },
+      { property: "og:description", content: "Browse handcrafted rings, necklaces, earrings and bracelets by Coast & Peak Studio." },
     ],
   }),
   component: ShopPage,
