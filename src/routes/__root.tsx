@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   Outlet,
   createRootRouteWithContext,
@@ -94,6 +95,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    document.documentElement.classList.remove("dark");
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <CatalogProvider>
