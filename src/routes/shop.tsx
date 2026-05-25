@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 import { ProductCard } from "@/components/sk/ProductCard";
-import { products, collections } from "@/lib/products";
+import { collections } from "@/lib/products";
+import { useCatalog } from "@/hooks/use-catalog";
 import { SlidersHorizontal } from "lucide-react";
 
 export const Route = createFileRoute("/shop")({
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/shop")({
 });
 
 function ShopPage() {
+  const { products } = useCatalog();
   const [cat, setCat] = useState<string>("all");
   const [sort, setSort] = useState<"featured" | "low" | "high">("featured");
 
@@ -26,7 +28,7 @@ function ShopPage() {
     if (sort === "low") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "high") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [cat, sort]);
+  }, [cat, sort, products]);
 
   return (
     <SiteLayout>
