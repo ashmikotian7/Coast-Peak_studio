@@ -159,7 +159,7 @@ function CollectionsStrip() {
   );
 }
 
-function FeaturedSection({ title, subtitle, items }: { title: string; subtitle: string; items: typeof products }) {
+function FeaturedSection({ title, subtitle, items }: { title: string; subtitle: string; items: import("@/lib/products").Product[] }) {
   return (
     <section className="bg-lavender-gradient py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
@@ -177,7 +177,7 @@ function FeaturedSection({ title, subtitle, items }: { title: string; subtitle: 
   );
 }
 
-function NewArrivals({ items }: { items: typeof products }) {
+function NewArrivals({ items }: { items: import("@/lib/products").Product[] }) {
   return (
     <section className="bg-background py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
@@ -233,7 +233,7 @@ function ArtisanStory() {
   );
 }
 
-function BestSellers({ items }: { items: typeof products }) {
+function BestSellers({ items }: { items: import("@/lib/products").Product[] }) {
   return (
     <section className="bg-background py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
