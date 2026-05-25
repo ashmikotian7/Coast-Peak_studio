@@ -5,7 +5,8 @@ import artisanImg from "@/assets/artisan-story.jpg";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 import { FloatingParticles } from "@/components/sk/FloatingParticles";
 import { ProductCard } from "@/components/sk/ProductCard";
-import { products, collections } from "@/lib/products";
+import { collections } from "@/lib/products";
+import { useCatalog } from "@/hooks/use-catalog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { products } = useCatalog();
   const newArrivals = products.filter((p) => p.tag === "new" || p.tag === undefined).slice(0, 4);
   const bestSellers = products.filter((p) => p.tag === "bestseller");
   const featured = products.slice(0, 3);
