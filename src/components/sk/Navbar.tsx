@@ -1,10 +1,8 @@
-import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingBag, User, Search, Menu, X, Sun, Moon } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Heart, ShoppingBag, User, Search, Menu, X, LayoutDashboard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
-import { LanguageDropdown } from "./LanguageDropdown";
 import { useStore } from "@/hooks/use-store";
-import { useTheme } from "@/hooks/use-theme";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -18,7 +16,10 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { cartCount, wishlist } = useStore();
-  const { theme, toggle } = useTheme();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isHome = pathname === "/";
+  // On non-home pages, always use the solid/scrolled appearance.
+  const solid = scrolled || !isHome;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -31,24 +32,23 @@ export function Navbar() {
     document.body.style.overflow = open ? "hidden" : "";
   }, [open]);
 
-  // When not scrolled, the nav floats over the dark hero — use ivory text.
-  // When scrolled, glass over light bg — use foreground.
-  const linkBase = scrolled
+  const linkBase = solid
     ? "text-foreground/85 hover:text-foreground"
     : "text-white/95 hover:text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.35)]";
-  const iconBase = scrolled
+  const iconBase = solid
     ? "text-foreground/80 hover:bg-secondary hover:text-foreground"
     : "text-white hover:bg-white/15";
+  const logoColor = solid ? "text-foreground" : "text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.45)]";
 
   return (
     <>
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ease-luxe ${
-          scrolled ? "glass shadow-soft" : "bg-transparent"
+          solid ? "glass shadow-soft" : "bg-transparent"
         }`}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:h-20 md:px-8">
-          <Link to="/" aria-label="Coast & Peak Studio Home">
+          <Link to="/" aria-label="Coast & Peak Studio Home" className={logoColor}>
             <Logo />
           </Link>
 
@@ -58,7 +58,7 @@ export function Navbar() {
                 key={l.to}
                 to={l.to}
                 className={`story-link font-serif text-base tracking-wide ${linkBase}`}
-                activeProps={{ className: `story-link font-serif text-base tracking-wide font-semibold ${scrolled ? "text-foreground" : "text-white"}` }}
+                activeProps={{ className: `story-link font-serif text-base tracking-wide font-semibold ${solid ? "text-foreground" : "text-white"}` }}
               >
                 {l.label}
               </Link>
@@ -66,15 +66,14 @@ export function Navbar() {
           </nav>
 
           <div className="flex items-center gap-1 md:gap-2">
-            <div className="hidden md:block">
-              <LanguageDropdown onLight={!scrolled} />
-            </div>
             <IconButton aria-label="Search" onClick={() => setSearchOpen(true)} className={iconBase}>
               <Search className="h-[18px] w-[18px]" />
             </IconButton>
-            <IconButton aria-label="Toggle theme" onClick={toggle} className={iconBase}>
-              {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
-            </IconButton>
+            <Link to="/dashboard" className="hidden md:inline-flex" aria-label="Seller dashboard">
+              <IconButton aria-label="Seller dashboard" className={iconBase}>
+                <LayoutDashboard className="h-[18px] w-[18px]" />
+              </IconButton>
+            </Link>
             <Link to="/wishlist" className="hidden md:inline-flex">
               <IconButton aria-label="Wishlist" className={iconBase}>
                 <Heart className="h-[18px] w-[18px]" />
@@ -105,23 +104,15 @@ export function Navbar() {
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        <div
-          className="absolute inset-0 bg-hero-gradient"
-          onClick={() => setOpen(false)}
-          aria-hidden
-        />
+        <div className="absolute inset-0 bg-hero-gradient" onClick={() => setOpen(false)} aria-hidden />
         <div
           className={`relative flex h-full flex-col p-6 text-[var(--ivory)] transition-transform duration-500 ease-luxe ${
             open ? "translate-y-0" : "-translate-y-4"
           }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between text-white">
             <Logo />
-            <button
-              onClick={() => setOpen(false)}
-              className="rounded-full border border-white/20 p-2"
-              aria-label="Close menu"
-            >
+            <button onClick={() => setOpen(false)} className="rounded-full border border-white/20 p-2" aria-label="Close menu">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -140,13 +131,13 @@ export function Navbar() {
             <Link to="/wishlist" onClick={() => setOpen(false)} className="font-display text-5xl text-white animate-fade-up" style={{ animationDelay: "0.42s" }}>
               Wishlist
             </Link>
+            <Link to="/dashboard" onClick={() => setOpen(false)} className="font-display text-5xl text-white animate-fade-up" style={{ animationDelay: "0.46s" }}>
+              Dashboard
+            </Link>
             <Link to="/profile" onClick={() => setOpen(false)} className="font-display text-5xl text-white animate-fade-up" style={{ animationDelay: "0.5s" }}>
               Profile
             </Link>
           </nav>
-          <div className="mt-8">
-            <LanguageDropdown onLight />
-          </div>
           <div className="mt-auto flex items-center justify-between text-sm text-white/60">
             <span>Handcrafted in small batches</span>
             <span>Coast &amp; Peak ©</span>
@@ -195,11 +186,7 @@ export function Navbar() {
   );
 }
 
-function IconButton({
-  children,
-  className = "",
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+function IconButton({ children, className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       {...props}

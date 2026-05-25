@@ -1,27 +1,31 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronLeft, Heart, ShoppingBag, Truck, ShieldCheck, RotateCcw, Star } from "lucide-react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
-import { products } from "@/lib/products";
+import { products as seedProducts } from "@/lib/products";
+import { useCatalog } from "@/hooks/use-catalog";
 import { useStore } from "@/hooks/use-store";
 import { ProductCard } from "@/components/sk/ProductCard";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/product/$id")({
   loader: ({ params }) => {
-    const product = products.find((p) => p.id === params.id);
-    if (!product) throw notFound();
-    return { product };
+    // Seed lookup only for SSR head metadata; runtime lookup uses catalog.
+    const product = seedProducts.find((p) => p.id === params.id) ?? null;
+    return { product, id: params.id };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: `${loaderData?.product.name ?? "Product"} — Coast & Peak Studio` },
-      { name: "description", content: loaderData?.product.description ?? "Handcrafted artisan jewelry by Coast & Peak Studio." },
-      { property: "og:title", content: `${loaderData?.product.name ?? "Product"} — Coast & Peak Studio` },
-      { property: "og:description", content: loaderData?.product.description ?? "" },
-      { property: "og:image", content: loaderData?.product.image ?? "" },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const p = loaderData?.product;
+    return {
+      meta: [
+        { title: `${p?.name ?? "Product"} — Coast & Peak Studio` },
+        { name: "description", content: p?.description ?? "Handcrafted artisan jewelry by Coast & Peak Studio." },
+        { property: "og:title", content: `${p?.name ?? "Product"} — Coast & Peak Studio` },
+        { property: "og:description", content: p?.description ?? "" },
+        { property: "og:image", content: p?.image ?? "" },
+      ],
+    };
+  },
   notFoundComponent: () => (
     <SiteLayout>
       <div className="flex min-h-[60vh] items-center justify-center px-6 pt-32 text-center">
@@ -36,10 +40,24 @@ export const Route = createFileRoute("/product/$id")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { id } = Route.useLoaderData();
+  const { products } = useCatalog();
+  const product = products.find((p) => p.id === id);
   const { addToCart, toggleWishlist, isWished } = useStore();
-  const [variant, setVariant] = useState("Gold · M");
+  const [variant, setVariant] = useState("Alloy · M");
   const [qty, setQty] = useState(1);
+  if (!product) {
+    return (
+      <SiteLayout>
+        <div className="flex min-h-[60vh] items-center justify-center px-6 pt-32 text-center">
+          <div>
+            <h1 className="font-display text-4xl">Piece not found</h1>
+            <Link to="/shop" className="story-link mt-4 inline-block font-serif">Back to shop</Link>
+          </div>
+        </div>
+      </SiteLayout>
+    );
+  }
   const wished = isWished(product.id);
   const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
