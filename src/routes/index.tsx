@@ -290,7 +290,8 @@ function Testimonials() {
 }
 
 function Gallery() {
-  const imgs = [products[0].image, products[3].image, products[2].image, products[1].image, products[0].image, products[3].image];
+  const { products } = useCatalog();
+  const imgs = [products[0]?.image, products[3]?.image, products[2]?.image, products[1]?.image, products[0]?.image, products[3]?.image].filter(Boolean) as string[];
   return (
     <section className="bg-background py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
