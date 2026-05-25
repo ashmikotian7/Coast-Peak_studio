@@ -9,9 +9,8 @@ import {
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
-import { ThemeProvider } from "@/hooks/use-theme";
 import { StoreProvider } from "@/hooks/use-store";
-import { I18nProvider } from "@/hooks/use-i18n";
+import { CatalogProvider } from "@/hooks/use-catalog";
 
 function NotFoundComponent() {
   return (
@@ -97,25 +96,23 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <I18nProvider>
-          <StoreProvider>
-            <Outlet />
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                style: {
-                  fontFamily: "var(--font-serif)",
-                  background: "var(--popover)",
-                  color: "var(--popover-foreground)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "16px",
-                },
-              }}
-            />
-          </StoreProvider>
-        </I18nProvider>
-      </ThemeProvider>
+      <CatalogProvider>
+        <StoreProvider>
+          <Outlet />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                fontFamily: "var(--font-serif)",
+                background: "var(--popover)",
+                color: "var(--popover-foreground)",
+                border: "1px solid var(--border)",
+                borderRadius: "16px",
+              },
+            }}
+          />
+        </StoreProvider>
+      </CatalogProvider>
     </QueryClientProvider>
   );
 }
