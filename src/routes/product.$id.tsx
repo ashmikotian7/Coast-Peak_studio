@@ -14,15 +14,18 @@ export const Route = createFileRoute("/product/$id")({
     const product = seedProducts.find((p) => p.id === params.id) ?? null;
     return { product, id: params.id };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: `${loaderData?.product.name ?? "Product"} — Coast & Peak Studio` },
-      { name: "description", content: loaderData?.product.description ?? "Handcrafted artisan jewelry by Coast & Peak Studio." },
-      { property: "og:title", content: `${loaderData?.product.name ?? "Product"} — Coast & Peak Studio` },
-      { property: "og:description", content: loaderData?.product.description ?? "" },
-      { property: "og:image", content: loaderData?.product.image ?? "" },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const p = loaderData?.product;
+    return {
+      meta: [
+        { title: `${p?.name ?? "Product"} — Coast & Peak Studio` },
+        { name: "description", content: p?.description ?? "Handcrafted artisan jewelry by Coast & Peak Studio." },
+        { property: "og:title", content: `${p?.name ?? "Product"} — Coast & Peak Studio` },
+        { property: "og:description", content: p?.description ?? "" },
+        { property: "og:image", content: p?.image ?? "" },
+      ],
+    };
+  },
   notFoundComponent: () => (
     <SiteLayout>
       <div className="flex min-h-[60vh] items-center justify-center px-6 pt-32 text-center">
