@@ -186,7 +186,7 @@ function NewArrivals({ items }: { items: import("@/lib/products").Product[] }) {
             <p className="font-serif text-xs uppercase tracking-[0.3em] text-muted-foreground">Just arrived</p>
             <h2 className="mt-3 font-display text-4xl md:text-5xl">New Arrivals</h2>
           </div>
-          <Link to="/shop" className="story-link font-serif text-sm">
+          <Link to="/shop" search={{ tag: "new" }} className="story-link font-serif text-sm">
             See everything →
           </Link>
         </div>
@@ -332,11 +332,11 @@ function LimitedEdition() {
           Hand-cut lavender crystals set in three brushed alloy bands. Numbered, signed, and shipped in a custom velvet vault.
         </p>
         <Link
-          to="/product/$id"
-          params={{ id: "lavender-stack" }}
+          to="/shop"
+          search={{ tag: "limited" }}
           className="mt-10 inline-flex items-center gap-3 rounded-full bg-gold-gradient px-8 py-4 text-sm font-medium uppercase tracking-[0.2em] text-[oklch(0.2_0.06_305)] shadow-gold transition-transform duration-500 ease-luxe hover:scale-[1.03]"
         >
-          Reserve yours <ArrowRight className="h-4 w-4" />
+          Explore Limited Edition <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </section>

@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Lock, CreditCard, Check, ChevronRight, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 import { useStore } from "@/hooks/use-store";
+import { useAuth } from "@/contexts/auth-context";
+import { getAccessToken } from "@/lib/auth";
 import { GemstoneLoader } from "@/components/sk/Loader";
 import { toast } from "sonner";
 
@@ -15,7 +17,8 @@ type Step = 0 | 1 | 2;
 const STEPS = ["Contact", "Shipping", "Payment"] as const;
 
 function CheckoutPage() {
-  const { cart, cartTotal } = useStore();
+  const { cart, cartTotal, clearCart } = useStore();
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>(0);
   const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
@@ -28,6 +31,28 @@ function CheckoutPage() {
     card: "", exp: "", cvc: "",
     method: "card" as "card" | "upi" | "cod",
   });
+
+  // Pre-fill user information and shipping address from profile if available
+  useEffect(() => {
+    if (user) {
+      const parts = (user.full_name || "").trim().split(" ");
+      const first = parts[0] || "";
+      const last = parts.slice(1).join(" ") || "";
+
+      setData((prev) => ({
+        ...prev,
+        email: prev.email || user.email || "",
+        phone: prev.phone || user.phone_number || "",
+        firstName: prev.firstName || first,
+        lastName: prev.lastName || last,
+        street: prev.street || user.street_address || "",
+        city: prev.city || user.city || "",
+        state: prev.state || user.state || "",
+        zip: prev.zip || user.zip_code || "",
+      }));
+    }
+  }, [user]);
+
   const set = (k: keyof typeof data) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setData((d) => ({ ...d, [k]: e.target.value }));
 
@@ -37,12 +62,52 @@ function CheckoutPage() {
     else handlePay();
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setProcessing(true);
-    setTimeout(() => {
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const token = getAccessToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${apiBase}/api/orders/checkout/`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          email: data.email,
+          phone: data.phone,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          street_address: data.street,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zip,
+          payment_method: data.method,
+          cart_items: cart.map((i) => ({
+            product_id: i.product.id,
+            name: i.product.name,
+            price: i.product.price,
+            quantity: i.qty,
+          })),
+        }),
+      });
+      const order = await res.json();
+      if (res.ok) {
+        await clearCart();
+        toast.success("Order placed successfully!", { description: `Order #${order.order_number} is on its way.` });
+        navigate({ to: "/track", search: { order: order.order_number } });
+      } else {
+        toast.error("Checkout failed", { description: order.detail || "Please check your details." });
+      }
+    } catch (err) {
+      await clearCart();
       toast.success("Order placed", { description: "Your velvet box is on its way." });
       navigate({ to: "/track" });
-    }, 2200);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (

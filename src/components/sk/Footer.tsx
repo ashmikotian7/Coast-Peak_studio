@@ -1,8 +1,34 @@
 import { Link } from "@tanstack/react-router";
 import { Instagram, Twitter, Facebook } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
+import { fetchGroupedProductsByTag } from "@/lib/products";
 
 export function Footer() {
+  const [tagCounts, setTagCounts] = useState<{
+    new?: number;
+    bestsellers?: number;
+    limited?: number;
+  }>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchGroupedProductsByTag()
+      .then((data) => {
+        if (isMounted) {
+          setTagCounts({
+            new: data.new?.length,
+            bestsellers: data.bestsellers?.length,
+            limited: data.limited?.length,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <footer className="relative mt-32 overflow-hidden bg-hero-gradient text-[var(--ivory)]">
       <div className="absolute inset-0 opacity-30" aria-hidden>
@@ -33,17 +59,25 @@ export function Footer() {
           </div>
 
           <FooterCol title="Shop">
-            <FLink to="/shop">All</FLink>
-            <FLink to="/shop">New Arrivals</FLink>
-            <FLink to="/shop">Bestsellers</FLink>
-            <FLink to="/shop">Limited Edition</FLink>
+            <FLink to="/shop">All Pieces</FLink>
+            <FLink to="/shop" search={{ tag: "new" }} count={tagCounts.new}>
+              New Arrivals
+            </FLink>
+            <FLink to="/shop" search={{ tag: "bestseller" }} count={tagCounts.bestsellers}>
+              Bestsellers
+            </FLink>
+            <FLink to="/shop" search={{ tag: "limited" }} count={tagCounts.limited}>
+              Limited Edition
+            </FLink>
           </FooterCol>
+
           <FooterCol title="Care">
             <FLink to="/contact">Contact</FLink>
             <FLink to="/track">Track Order</FLink>
             <FLink to="/about">Our Story</FLink>
             <FLink to="/contact">Shipping</FLink>
           </FooterCol>
+
           <FooterCol title="Account">
             <FLink to="/login">Sign In</FLink>
             <FLink to="/register">Create Account</FLink>
@@ -53,7 +87,9 @@ export function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col items-start justify-between gap-6 border-t border-white/15 pt-8 md:flex-row md:items-center">
-          <p className="font-serif text-sm text-white/60">© {new Date().getFullYear()} Coast &amp; Peak Studio — Handcrafted with care.</p>
+          <p className="font-serif text-sm text-white/60">
+            © {new Date().getFullYear()} Coast &amp; Peak Studio — Handcrafted with care.
+          </p>
           <div className="flex items-center gap-3">
             {[Instagram, Twitter, Facebook].map((Icon, i) => (
               <a
@@ -81,11 +117,30 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-function FLink({ to, children }: { to: string; children: React.ReactNode }) {
+function FLink({
+  to,
+  search,
+  count,
+  children,
+}: {
+  to: string;
+  search?: Record<string, any>;
+  count?: number;
+  children: React.ReactNode;
+}) {
   return (
     <li>
-      <Link to={to} className="story-link inline-block hover:text-white">
-        {children}
+      <Link
+        to={to}
+        search={search}
+        className="story-link inline-flex items-center gap-2 text-white/75 transition-colors hover:text-white"
+      >
+        <span>{children}</span>
+        {count !== undefined && count > 0 && (
+          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-mono tracking-tight text-white/90">
+            {count}
+          </span>
+        )}
       </Link>
     </li>
   );

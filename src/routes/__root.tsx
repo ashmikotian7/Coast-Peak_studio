@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { StoreProvider } from "@/hooks/use-store";
 import { CatalogProvider } from "@/hooks/use-catalog";
+import { AuthProvider } from "@/contexts/auth-context";
 
 function NotFoundComponent() {
   return (
@@ -102,19 +103,21 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <CatalogProvider>
         <StoreProvider>
-          <Outlet />
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                fontFamily: "var(--font-serif)",
-                background: "var(--popover)",
-                color: "var(--popover-foreground)",
-                border: "1px solid var(--border)",
-                borderRadius: "16px",
-              },
-            }}
-          />
+          <AuthProvider>
+            <Outlet />
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                style: {
+                  fontFamily: "var(--font-serif)",
+                  background: "var(--popover)",
+                  color: "var(--popover-foreground)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "16px",
+                },
+              }}
+            />
+          </AuthProvider>
         </StoreProvider>
       </CatalogProvider>
     </QueryClientProvider>

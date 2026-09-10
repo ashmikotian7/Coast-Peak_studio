@@ -2,20 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronLeft, Heart, ShoppingBag, Truck, ShieldCheck, RotateCcw, Star } from "lucide-react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
-import { products as seedProducts } from "@/lib/products";
+import { fetchProductByIdFromAPI, type Product } from "@/lib/products";
 import { useCatalog } from "@/hooks/use-catalog";
 import { useStore } from "@/hooks/use-store";
 import { ProductCard } from "@/components/sk/ProductCard";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/product/$id")({
-  loader: ({ params }) => {
-    // Seed lookup only for SSR head metadata; runtime lookup uses catalog.
-    const product = seedProducts.find((p) => p.id === params.id) ?? null;
-    return { product, id: params.id };
+  loader: async ({ params }) => {
+    const product = await fetchProductByIdFromAPI(params.id);
+    return { initialProduct: product, id: params.id };
   },
   head: ({ loaderData }) => {
-    const p = loaderData?.product;
+    const p = loaderData?.initialProduct;
     return {
       meta: [
         { title: `${p?.name ?? "Product"} — Coast & Peak Studio` },
@@ -40,13 +39,25 @@ export const Route = createFileRoute("/product/$id")({
 });
 
 function ProductPage() {
-  const { id } = Route.useLoaderData();
-  const { products } = useCatalog();
-  const product = products.find((p) => p.id === id);
+  const { id, initialProduct } = Route.useLoaderData();
+  const { products, isLoading } = useCatalog();
+  const product = products.find((p) => p.id === id) ?? initialProduct;
   const { addToCart, toggleWishlist, isWished } = useStore();
   const [variant, setVariant] = useState("Alloy · M");
   const [qty, setQty] = useState(1);
+
   if (!product) {
+    if (isLoading) {
+      return (
+        <SiteLayout>
+          <div className="flex min-h-[60vh] items-center justify-center px-6 pt-32 text-center">
+            <p className="font-serif text-lg text-muted-foreground animate-pulse">
+              Retrieving piece from atelier…
+            </p>
+          </div>
+        </SiteLayout>
+      );
+    }
     return (
       <SiteLayout>
         <div className="flex min-h-[60vh] items-center justify-center px-6 pt-32 text-center">
@@ -84,11 +95,18 @@ function ProductPage() {
           </div>
 
           <div>
-            {product.tag && (
-              <span className="inline-block rounded-full bg-gold-gradient px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[oklch(0.2_0.06_305)] shadow-gold">
-                {product.tag}
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {product.tag && (
+                <span className="inline-block rounded-full bg-gold-gradient px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[oklch(0.2_0.06_305)] shadow-gold">
+                  {product.tag}
+                </span>
+              )}
+              {product.sku && (
+                <span className="inline-block rounded-full bg-secondary border border-border px-3 py-1 text-[10px] font-mono tracking-wider text-[var(--royal)]">
+                  SKU: {product.sku}
+                </span>
+              )}
+            </div>
             <h1 className="mt-3 font-display text-5xl md:text-6xl">{product.name}</h1>
             <div className="mt-3 flex items-center gap-3">
               <div className="flex">
