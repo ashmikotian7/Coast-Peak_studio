@@ -2,22 +2,25 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SiteLayout } from "@/components/sk/SiteLayout";
-import { collections, saveProductToCatalog } from "@/lib/products";
+import { collections, saveProductToCatalog, DEFAULT_CATEGORY_MAP } from "@/lib/products";
 import { useCatalog } from "@/hooks/use-catalog";
 
 // Helper to render a select dropdown from collections
-function CategorySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function CategorySelect({ value, onChange }: { value: string | number; onChange: (v: string) => void }) {
   return (
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
       className="w-full rounded-xl border border-border bg-background/60 p-3 text-sm text-foreground outline-none focus:border-[var(--royal)] focus:ring-2 focus:ring-[var(--royal)]/20"
     >
-      {collections.map(col => (
-        <option key={col.slug} value={col.slug}>
-          {col.name}
-        </option>
-      ))}
+      {collections.map(col => {
+        const catId = DEFAULT_CATEGORY_MAP[col.slug] ?? col.slug;
+        return (
+          <option key={col.slug} value={catId}>
+            {col.name}
+          </option>
+        );
+      })}
     </select>
   );
 }
@@ -29,7 +32,7 @@ function AddProductPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
   const [priceUsd, setPriceUsd] = useState("");
-  const [category, setCategory] = useState(collections[0].slug);
+  const [category, setCategory] = useState<string | number>(DEFAULT_CATEGORY_MAP[collections[0].slug] || 1);
   const [tag, setTag] = useState(""); // empty = none
   const [stock, setStock] = useState("");
   const [description, setDescription] = useState("");

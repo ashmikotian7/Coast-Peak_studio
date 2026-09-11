@@ -25,6 +25,23 @@ export const collections = [
   { slug: "bracelets", name: "Bracelets", tagline: "Heirlooms in motion" },
 ];
 
+export const DEFAULT_CATEGORY_MAP: Record<string, number> = {
+  earrings: 1,
+  necklaces: 2,
+  rings: 3,
+  bracelets: 4,
+};
+
+export function resolveCategoryId(category: string | number): number | string {
+  if (typeof category === "number") return category;
+  const num = Number(category);
+  if (!isNaN(num) && String(category).trim() !== "") {
+    return num;
+  }
+  const slug = String(category).toLowerCase().trim();
+  return DEFAULT_CATEGORY_MAP[slug] ?? category;
+}
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
 
 export function getFallbackImage(category?: string): string {
@@ -160,7 +177,7 @@ export async function updateProductInCatalog(
 export interface SaveProductInput {
   name: string;
   price: string | number;
-  category: string;
+  category: string | number;
   tag?: string;
   stock?: string | number;
   description?: string;
@@ -176,7 +193,7 @@ export async function saveProductToCatalog(
   const cleanPrice = parseFloat(String(step1Data.price).replace(/[^0-9.]/g, "")) || 0;
   const safePrice = Math.min(Math.max(cleanPrice, 0.01), 99999999.99).toFixed(2);
   formData.append("price", safePrice);
-  formData.append("category", step1Data.category);
+  formData.append("category", String(resolveCategoryId(step1Data.category)));
   // Tag normalization: default "— None —", "none", or "" converts to null
   const tagVal = step1Data.tag?.trim();
   formData.append("tag", !tagVal || tagVal === "none" || tagVal === "— None —" ? "— None —" : tagVal);
