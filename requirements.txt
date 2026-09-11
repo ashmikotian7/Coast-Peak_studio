@@ -1,0 +1,16 @@
+Django==5.0.2
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+django-cors-headers==4.3.1
+drf-spectacular==0.27.1
+Pillow==10.2.0
+Django
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+psycopg2-binary
+gunicorn
+python-dotenv
+whitenoise
