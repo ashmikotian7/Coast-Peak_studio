@@ -110,6 +110,9 @@ function AddProductPage() {
                   id="priceUsd"
                   type="number"
                   step="0.01"
+                  min="0.01"
+                  max="99999999.99"
+                  placeholder="e.g. 150.00"
                   value={priceUsd}
                   onChange={e => setPriceUsd(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background/60 p-3 text-sm text-foreground outline-none focus:border-[var(--royal)] focus:ring-2 focus:ring-[var(--royal)]/20"

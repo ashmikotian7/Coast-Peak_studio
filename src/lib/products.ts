@@ -2,6 +2,7 @@ import earrings from "@/assets/product-earrings.jpg";
 import necklace from "@/assets/product-necklace.jpg";
 import rings from "@/assets/product-rings.jpg";
 import bracelet from "@/assets/product-bracelet.jpg";
+import { getAccessToken } from "./auth";
 
 export type Product = {
   id: string;
@@ -172,7 +173,9 @@ export async function saveProductToCatalog(
   const formData = new FormData();
   // Step 1 fields
   formData.append("name", step1Data.name);
-  formData.append("price", String(step1Data.price));
+  const cleanPrice = parseFloat(String(step1Data.price).replace(/[^0-9.]/g, "")) || 0;
+  const safePrice = Math.min(Math.max(cleanPrice, 0.01), 99999999.99).toFixed(2);
+  formData.append("price", safePrice);
   formData.append("category", step1Data.category);
   // Tag normalization: default "— None —", "none", or "" converts to null
   const tagVal = step1Data.tag?.trim();
@@ -185,10 +188,15 @@ export async function saveProductToCatalog(
     formData.append("image", step2ImageFile);
   }
 
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}/api/products/items/`, {
     method: "POST",
-    // Do NOT set 'Content-Type': the browser will automatically set
-    // 'multipart/form-data; boundary=...' with the binary payload
+    headers,
     body: formData,
   });
 
