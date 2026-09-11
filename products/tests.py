@@ -43,6 +43,29 @@ class ProductTagAPITests(TestCase):
             is_active=True
         )
 
+    def test_create_product_with_slug_category_and_auto_create(self):
+        # Test creating product with existing slug 'rings'
+        res = self.client.post('/api/products/items/', {
+            'name': 'Golden Ring',
+            'price': '199.99',
+            'category': 'rings',
+            'stock': '10',
+            'description': 'A beautiful golden ring.'
+        })
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        self.assertEqual(res.data['category_slug'], 'rings')
+
+        # Test creating product with brand new slug 'bracelets' that does not exist in DB yet
+        res2 = self.client.post('/api/products/items/', {
+            'name': 'Velvet Bracelet',
+            'price': '.00',
+            'category': 'bracelets',
+            'stock': '3'
+        })
+        self.assertEqual(res2.status_code, status.HTTP_201_CREATED, res2.data)
+        self.assertEqual(res2.data['category_slug'], 'bracelets')
+        self.assertTrue(Category.objects.filter(slug='bracelets').exists())
+
     def test_get_new_products(self):
         res = self.client.get('/api/products/new/')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
