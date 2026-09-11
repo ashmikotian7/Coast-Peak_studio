@@ -20,7 +20,9 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Allow local, render, vercel, cloudflare and custom domains
+allowed_hosts_raw = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com,coast-peak-studio.onrender.com,*')
+ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(',') if h.strip()]
 
 
 # Application definition
@@ -188,18 +190,24 @@ SIMPLE_JWT = {
 }
 
 
-# CORS Settings
-CORS_ALLOWED_ORIGINS = os.getenv(
-    'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173'
-).split(',')
+# CORS & CSRF Settings
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = ['*']
+CORS_ALLOW_METHODS = ['*']
 
-# Allow all methods and headers for development
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
-    CORS_ALLOW_ALL_METHODS = True
-    CORS_ALLOW_ALL_HEADERS = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://coast-peak-studio.onrender.com',
+    'https://*.onrender.com',
+    'https://*.vercel.app',
+    'https://*.pages.dev',
+    'http://localhost:8080',
+    'http://localhost:8081',
+    'http://localhost:5173',
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:8081',
+    'http://127.0.0.1:5173',
+]
 
 
 # API Documentation Settings
