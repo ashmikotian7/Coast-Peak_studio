@@ -65,7 +65,7 @@ function CheckoutPage() {
   const handlePay = async () => {
     setProcessing(true);
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+      const apiBase = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       const token = getAccessToken();
       if (token) {
@@ -124,9 +124,8 @@ function CheckoutPage() {
               const active = i === step;
               return (
                 <li key={label} className="flex flex-1 items-center">
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300 depth-3d ${
-                    done ? "bg-[var(--royal)] text-white" : active ? "bg-gradient-to-br from-[var(--royal)] to-[var(--wine)] text-white scale-110" : "bg-white text-muted-foreground"
-                  }`}>
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300 depth-3d ${done ? "bg-[var(--royal)] text-white" : active ? "bg-gradient-to-br from-[var(--royal)] to-[var(--wine)] text-white scale-110" : "bg-white text-muted-foreground"
+                    }`}>
                     {done ? <Check className="h-4 w-4" /> : i + 1}
                   </div>
                   <span className={`ml-2 hidden text-xs uppercase tracking-[0.2em] sm:inline ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}>{label}</span>
@@ -173,11 +172,10 @@ function CheckoutPage() {
                       key={m.v}
                       type="button"
                       onClick={() => setData((d) => ({ ...d, method: m.v }))}
-                      className={`rounded-2xl border p-3 text-xs uppercase tracking-[0.2em] transition-all depth-3d ${
-                        data.method === m.v
+                      className={`rounded-2xl border p-3 text-xs uppercase tracking-[0.2em] transition-all depth-3d ${data.method === m.v
                           ? "border-[var(--royal)] bg-gradient-to-br from-[var(--royal)]/10 to-[var(--wine)]/10 text-foreground"
                           : "border-border bg-card text-muted-foreground hover:border-[var(--royal)]/60"
-                      }`}
+                        }`}
                     >
                       {m.l}
                     </button>

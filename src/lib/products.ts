@@ -24,7 +24,7 @@ export const collections = [
   { slug: "bracelets", name: "Bracelets", tagline: "Heirlooms in motion" },
 ];
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
 
 export function getFallbackImage(category?: string): string {
   switch (category?.toLowerCase()) {
