@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Lock, CreditCard, Check, ChevronRight, ArrowLeft } from "lucide-react";
+import { Lock, CreditCard, Check, ChevronRight, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 import { useStore } from "@/hooks/use-store";
@@ -7,6 +7,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { getAccessToken } from "@/lib/auth";
 import { GemstoneLoader } from "@/components/sk/Loader";
 import { toast } from "sonner";
+import {
+  createCheckoutOrder,
+  verifyPayment,
+  loadRazorpayScript,
+} from "@/lib/razorpay";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — Coast & Peak Studio" }] }),
@@ -26,10 +31,15 @@ function CheckoutPage() {
   const total = cartTotal + shipping;
 
   const [data, setData] = useState({
-    email: "", phone: "",
-    firstName: "", lastName: "", street: "", city: "", state: "", zip: "",
-    card: "", exp: "", cvc: "",
-    method: "card" as "card" | "upi" | "cod",
+    email: "",
+    phone: "",
+    firstName: "",
+    lastName: "",
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+    method: "razorpay" as "razorpay" | "cod",
   });
 
   // Pre-fill user information and shipping address from profile if available
@@ -58,11 +68,170 @@ function CheckoutPage() {
 
   const next = (e: React.FormEvent) => {
     e.preventDefault();
-    if (step < 2) setStep((s) => (s + 1) as Step);
-    else handlePay();
+    if (step < 2) {
+      setStep((s) => (s + 1) as Step);
+    } else {
+      if (data.method === "razorpay") {
+        handleRazorpayPayment();
+      } else {
+        handleCodPayment();
+      }
+    }
   };
 
-  const handlePay = async () => {
+  /**
+   * STEP 2 & 3: Standard Razorpay Web Checkout Flow
+   * 1. Call POST /api/create-order
+   * 2. Open Razorpay modal with order_id
+   * 3. On success, call POST /api/verify-payment with razorpay_order_id, razorpay_payment_id, razorpay_signature
+   */
+  const handleRazorpayPayment = async () => {
+    setProcessing(true);
+    const toastId = toast.loading("Connecting to Razorpay Secure Gateway…");
+
+    try {
+      // 1. Ensure Razorpay script is loaded
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || !window.Razorpay) {
+        toast.dismiss(toastId);
+        toast.error("Gateway Unavailable", {
+          description: "Could not load Razorpay checkout script. Please check your internet connection.",
+        });
+        setProcessing(false);
+        return;
+      }
+
+      // 2. Call backend endpoint to create order (amount in paise, minimum 100)
+      const amountInPaise = Math.max(100, Math.round(total * 100));
+      const orderData = await createCheckoutOrder({
+        amount: amountInPaise,
+        currency: "INR",
+        receipt: `rcpt_${Date.now()}`,
+      });
+
+      toast.dismiss(toastId);
+
+      const razorpayKeyId =
+        import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_Tb5k5uSyScd9xr";
+
+      // 3. Configure Razorpay modal options
+      const options = {
+        key: razorpayKeyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Coast & Peak Studio",
+        description: "Handcrafted Boutique Jewelry Order",
+        image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=200&q=80",
+        order_id: orderData.order_id,
+        prefill: {
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          email: data.email,
+          contact: data.phone,
+        },
+        theme: {
+          color: "#4a154b", // deep royal/wine boutique color
+        },
+        modal: {
+          ondismiss: () => {
+            setProcessing(false);
+            toast.info("Payment Cancelled", {
+              description: "You closed the checkout modal before completing payment.",
+            });
+          },
+        },
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          const verifyToast = toast.loading("Verifying payment authenticity…");
+          try {
+            // 4. Call backend endpoint to verify signature
+            const verifyRes = await verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            toast.dismiss(verifyToast);
+
+            if (verifyRes.success) {
+              // Optionally sync with backend order database if available
+              try {
+                const apiBase = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
+                const headers: Record<string, string> = { "Content-Type": "application/json" };
+                const token = getAccessToken();
+                if (token) headers["Authorization"] = `Bearer ${token}`;
+
+                await fetch(`${apiBase}/api/orders/checkout/`, {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({
+                    email: data.email,
+                    phone: data.phone,
+                    first_name: data.firstName,
+                    last_name: data.lastName,
+                    street_address: data.street,
+                    city: data.city,
+                    state: data.state,
+                    zip_code: data.zip,
+                    payment_method: "razorpay",
+                    transaction_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    cart_items: cart.map((i) => ({
+                      product_id: i.product.id,
+                      name: i.product.name,
+                      price: i.product.price,
+                      quantity: i.qty,
+                    })),
+                  }),
+                });
+              } catch (syncErr) {
+                console.warn("Order sync warning:", syncErr);
+              }
+
+              await clearCart();
+              toast.success("Payment Verified & Order Placed!", {
+                description: `Razorpay Payment ID: ${response.razorpay_payment_id}`,
+              });
+              navigate({ to: "/track" });
+            }
+          } catch (err: unknown) {
+            toast.dismiss(verifyToast);
+            const msg = (err as Error)?.message || "Payment signature verification failed.";
+            toast.error("Payment Verification Failed", {
+              description: msg,
+            });
+          } finally {
+            setProcessing(false);
+          }
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+
+      // Handle payment failure event
+      rzp.on("payment.failed", (failedResp: unknown) => {
+        setProcessing(false);
+        const errObj = failedResp as { error?: { description?: string; code?: string } };
+        toast.error("Payment Failed", {
+          description: errObj?.error?.description || "Your bank or payment provider declined the transaction.",
+        });
+      });
+
+      rzp.open();
+    } catch (err: unknown) {
+      toast.dismiss(toastId);
+      setProcessing(false);
+      const msg = (err as Error)?.message || "Failed to initiate payment. Please try again.";
+      toast.error("Checkout Error", { description: msg });
+    }
+  };
+
+  /**
+   * Cash on Delivery fallback handler
+   */
+  const handleCodPayment = async () => {
     setProcessing(true);
     try {
       const apiBase = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
@@ -84,7 +253,7 @@ function CheckoutPage() {
           city: data.city,
           state: data.state,
           zip_code: data.zip,
-          payment_method: data.method,
+          payment_method: "cod",
           cart_items: cart.map((i) => ({
             product_id: i.product.id,
             name: i.product.name,
@@ -162,41 +331,61 @@ function CheckoutPage() {
             )}
             {step === 2 && (
               <FormBlock title="Payment method">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                  {([
-                    { v: "card", l: "Card" },
-                    { v: "upi", l: "UPI" },
-                    { v: "cod", l: "Cash on delivery" },
-                  ] as const).map((m) => (
-                    <button
-                      key={m.v}
-                      type="button"
-                      onClick={() => setData((d) => ({ ...d, method: m.v }))}
-                      className={`rounded-2xl border p-3 text-xs uppercase tracking-[0.2em] transition-all depth-3d text-center ${data.method === m.v
-                          ? "border-[var(--royal)] bg-gradient-to-br from-[var(--royal)]/10 to-[var(--wine)]/10 text-foreground font-semibold"
-                          : "border-border bg-card text-muted-foreground hover:border-[var(--royal)]/60"
-                        }`}
-                    >
-                      {m.l}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setData((d) => ({ ...d, method: "razorpay" }))}
+                    className={`rounded-2xl border p-4 text-left transition-all depth-3d ${
+                      data.method === "razorpay"
+                        ? "border-[var(--royal)] bg-gradient-to-br from-[var(--royal)]/10 to-[var(--wine)]/10 text-foreground font-semibold shadow-sm"
+                        : "border-border bg-card text-muted-foreground hover:border-[var(--royal)]/60"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs uppercase tracking-[0.2em] font-medium text-foreground">Razorpay Checkout</span>
+                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[var(--gold)]/20 text-[var(--gold)] font-bold">Standard</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Credit/Debit Cards, UPI, Netbanking, Wallets</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setData((d) => ({ ...d, method: "cod" }))}
+                    className={`rounded-2xl border p-4 text-left transition-all depth-3d ${
+                      data.method === "cod"
+                        ? "border-[var(--royal)] bg-gradient-to-br from-[var(--royal)]/10 to-[var(--wine)]/10 text-foreground font-semibold shadow-sm"
+                        : "border-border bg-card text-muted-foreground hover:border-[var(--royal)]/60"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs uppercase tracking-[0.2em] font-medium text-foreground">Cash on Delivery</span>
+                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">India</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Pay in cash when your velvet box arrives</p>
+                  </button>
                 </div>
 
-                {data.method === "card" && (
-                  <div className="rounded-2xl border border-border bg-card p-4 depth-3d">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CreditCard className="h-4 w-4" /> Card details
+                {data.method === "razorpay" && (
+                  <div className="rounded-2xl border border-border bg-card p-4 space-y-3 depth-3d">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[var(--royal)] font-semibold">
+                        <CreditCard className="h-4 w-4" /> Razorpay Standard Web Checkout
+                      </div>
+                      <span className="text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-medium">Test Mode Active</span>
                     </div>
-                    <Input placeholder="Card number" className="mt-3" value={data.card} onChange={set("card")} />
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <Input placeholder="MM / YY" value={data.exp} onChange={set("exp")} />
-                      <Input placeholder="CVC" value={data.cvc} onChange={set("cvc")} />
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Clicking <strong>&ldquo;Pay ${total} with Razorpay&rdquo;</strong> will launch the Razorpay popup modal with full support for Cards, Google Pay / PhonePe / Paytm UPI, Net Banking, and Wallets.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border text-[11px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> 256-bit SSL encrypted</span>
+                      <span>•</span>
+                      <span>Instant HMAC-SHA256 signature verification</span>
+                      <span>•</span>
+                      <span>No card details stored on server</span>
                     </div>
                   </div>
                 )}
-                {data.method === "upi" && (
-                  <Input placeholder="yourname@upi" />
-                )}
+
                 {data.method === "cod" && (
                   <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
                     Pay in cash when your velvet box arrives. Available across India.
@@ -217,10 +406,18 @@ function CheckoutPage() {
               )}
               <button
                 type="submit"
-                disabled={processing || cart.length === 0}
-                className="flex flex-1 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] py-4 text-sm uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform duration-300 ease-luxe hover:scale-[1.01] disabled:opacity-60 order-1 sm:order-2"
+                disabled={processing || (step < 2 && cart.length === 0)}
+                className="flex flex-1 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] py-4 text-sm uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform duration-300 ease-luxe hover:scale-[1.01] disabled:opacity-60 order-1 sm:order-2 cursor-pointer"
               >
-                {processing ? <GemstoneLoader /> : step < 2 ? <>Continue <ChevronRight className="h-4 w-4" /></> : <>Pay ${total}</>}
+                {processing ? (
+                  <GemstoneLoader />
+                ) : step < 2 ? (
+                  <>Continue <ChevronRight className="h-4 w-4" /></>
+                ) : data.method === "razorpay" ? (
+                  <>Pay ${total} with Razorpay</>
+                ) : (
+                  <>Place Cash on Delivery Order</>
+                )}
               </button>
             </div>
           </form>

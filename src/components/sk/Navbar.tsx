@@ -1,5 +1,19 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Heart, ShoppingBag, User, Search, Menu, X, LayoutDashboard } from "lucide-react";
+import {
+  Heart,
+  ShoppingBag,
+  User,
+  Search,
+  Menu,
+  X,
+  LayoutDashboard,
+  Home,
+  Sparkles,
+  Compass,
+  Mail,
+  Package,
+  ChevronRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { useStore } from "@/hooks/use-store";
@@ -98,49 +112,205 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* Mobile menu overlay */}
+      {/* Mobile menu slide-in drawer */}
       <div
-        className={`fixed inset-0 z-[60] transition-all duration-500 ease-luxe md:hidden ${
+        className={`fixed inset-0 z-[60] transition-opacity duration-300 md:hidden ${
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        <div className="absolute inset-0 bg-hero-gradient" onClick={() => setOpen(false)} aria-hidden />
+        {/* Backdrop */}
         <div
-          className={`relative flex h-full flex-col p-6 text-[var(--ivory)] transition-transform duration-500 ease-luxe overflow-y-auto ${
-            open ? "translate-y-0" : "-translate-y-4"
+          className="absolute inset-0 bg-black/65 backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setOpen(false)}
+          aria-hidden
+        />
+
+        {/* Slide-out Drawer from Right */}
+        <div
+          className={`relative ml-auto flex h-full w-[85vw] max-w-[330px] flex-col bg-gradient-to-b from-[oklch(0.26_0.12_300)] via-[oklch(0.23_0.10_18)] to-[oklch(0.20_0.08_300)] shadow-2xl border-l border-white/10 text-[var(--ivory)] transition-transform duration-300 ease-out overflow-y-auto ${
+            open ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          <div className="flex items-center justify-between text-white shrink-0">
-            <Logo />
-            <button onClick={() => setOpen(false)} className="rounded-full border border-white/20 p-2" aria-label="Close menu">
-              <X className="h-5 w-5" />
+          {/* Drawer Header */}
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 shrink-0">
+            <div className="flex flex-col">
+              <span className="font-serif text-base tracking-wider text-white font-medium">Coast &amp; Peak</span>
+              <span className="text-[9px] uppercase font-mono tracking-[0.22em] text-[var(--gold)]">
+                Jewels Atelier
+              </span>
+            </div>
+            <button
+              onClick={() => setOpen(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/80 transition-colors hover:bg-white/15 hover:text-white active:scale-95"
+              aria-label="Close menu"
+            >
+              <X className="h-4 w-4" />
             </button>
           </div>
-          <nav className="my-8 flex flex-col gap-4 sm:gap-6">
-            {navLinks.map((l, i) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                onClick={() => setOpen(false)}
-                className="font-display text-3xl sm:text-4xl text-white transition-colors hover:text-[var(--gold)]"
-                style={{ animationDelay: `${0.1 + i * 0.06}s` }}
-              >
-                {l.label}
-              </Link>
-            ))}
-            <Link to="/wishlist" onClick={() => setOpen(false)} className="font-display text-3xl sm:text-4xl text-white transition-colors hover:text-[var(--gold)]">
-              Wishlist
-            </Link>
-            <Link to="/dashboard" onClick={() => setOpen(false)} className="font-display text-3xl sm:text-4xl text-white transition-colors hover:text-[var(--gold)]">
-              Dashboard
-            </Link>
-            <Link to="/profile" onClick={() => setOpen(false)} className="font-display text-3xl sm:text-4xl text-white transition-colors hover:text-[var(--gold)]">
-              Profile
-            </Link>
-          </nav>
-          <div className="mt-auto pt-6 flex items-center justify-between text-xs text-white/60 border-t border-white/10 shrink-0">
-            <span>Handcrafted in small batches</span>
-            <span>Coast &amp; Peak ©</span>
+
+          {/* Quick Search trigger inside drawer */}
+          <div className="px-4 pt-3 pb-1 shrink-0">
+            <button
+              onClick={() => {
+                setOpen(false);
+                setSearchOpen(true);
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <Search className="h-3.5 w-3.5 text-[var(--gold)]" />
+              <span>Search gems &amp; jewelry…</span>
+            </button>
+          </div>
+
+          {/* Navigation Sections */}
+          <div className="flex-1 px-3 py-3 space-y-4 overflow-y-auto">
+            {/* Main Navigation */}
+            <div>
+              <p className="px-2 mb-1.5 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--gold)]/80">
+                Explore
+              </p>
+              <nav className="flex flex-col space-y-0.5">
+                {[
+                  { to: "/", label: "Home", icon: Home },
+                  { to: "/shop", label: "Shop Collections", icon: Sparkles },
+                  { to: "/about", label: "Our Story", icon: Compass },
+                  { to: "/contact", label: "Contact & Concierge", icon: Mail },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.to;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setOpen(false)}
+                      className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+                        isActive
+                          ? "bg-white/15 text-[var(--gold)] font-semibold"
+                          : "text-white/85 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`h-4 w-4 ${isActive ? "text-[var(--gold)]" : "text-white/50 group-hover:text-white/90"}`} />
+                        <span>{item.label}</span>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-white/30 group-hover:text-white/70 group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Atelier & Account */}
+            <div className="pt-2 border-t border-white/10">
+              <p className="px-2 mb-1.5 text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--gold)]/80">
+                Account &amp; Studio
+              </p>
+              <nav className="flex flex-col space-y-0.5">
+                <Link
+                  to="/wishlist"
+                  onClick={() => setOpen(false)}
+                  className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+                    pathname === "/wishlist"
+                      ? "bg-white/15 text-[var(--gold)] font-semibold"
+                      : "text-white/85 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Heart className="h-4 w-4 text-white/50 group-hover:text-white/90" />
+                    <span>Wishlist</span>
+                  </div>
+                  {wishlist.length > 0 ? (
+                    <span className="rounded-full bg-[var(--gold)] px-1.5 py-0.5 text-[10px] font-bold text-black">
+                      {wishlist.length}
+                    </span>
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 text-white/30" />
+                  )}
+                </Link>
+
+                <Link
+                  to="/cart"
+                  onClick={() => setOpen(false)}
+                  className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+                    pathname === "/cart"
+                      ? "bg-white/15 text-[var(--gold)] font-semibold"
+                      : "text-white/85 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShoppingBag className="h-4 w-4 text-white/50 group-hover:text-white/90" />
+                    <span>Shopping Bag</span>
+                  </div>
+                  {cartCount > 0 ? (
+                    <span className="rounded-full bg-[var(--gold)] px-1.5 py-0.5 text-[10px] font-bold text-black">
+                      {cartCount}
+                    </span>
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 text-white/30" />
+                  )}
+                </Link>
+
+                <Link
+                  to="/track"
+                  onClick={() => setOpen(false)}
+                  className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+                    pathname === "/track"
+                      ? "bg-white/15 text-[var(--gold)] font-semibold"
+                      : "text-white/85 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Package className="h-4 w-4 text-white/50 group-hover:text-white/90" />
+                    <span>Track Order</span>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-white/30" />
+                </Link>
+
+                <Link
+                  to="/profile"
+                  onClick={() => setOpen(false)}
+                  className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+                    pathname === "/profile"
+                      ? "bg-white/15 text-[var(--gold)] font-semibold"
+                      : "text-white/85 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <User className="h-4 w-4 text-white/50 group-hover:text-white/90" />
+                    <span>My Profile</span>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-white/30" />
+                </Link>
+
+                <Link
+                  to="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+                    pathname === "/dashboard"
+                      ? "bg-white/15 text-[var(--gold)] font-semibold"
+                      : "text-white/85 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <LayoutDashboard className="h-4 w-4 text-white/50 group-hover:text-white/90" />
+                    <span>Seller Dashboard</span>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-white/30" />
+                </Link>
+              </nav>
+            </div>
+          </div>
+
+          {/* Drawer Footer */}
+          <div className="mt-auto border-t border-white/10 bg-black/20 p-4 shrink-0 space-y-1.5">
+            <div className="flex items-center gap-2 text-[11px] text-white/65">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--gold)]" />
+              <span>Complimentary insured shipping</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-white/40">
+              <span>Handcrafted</span>
+              <span>Coast &amp; Peak ©</span>
+            </div>
           </div>
         </div>
       </div>

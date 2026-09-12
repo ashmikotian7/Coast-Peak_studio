@@ -1,0 +1,337 @@
+import Razorpay from "razorpay";
+import crypto from "node:crypto";
+
+export interface CreateOrderInput {
+  amount: number;
+  currency?: string;
+  receipt?: string;
+}
+
+export interface VerifyPaymentInput {
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
+  order_id?: string;
+  payment_id?: string;
+  signature?: string;
+}
+
+export function getRazorpayCredentials(env?: unknown): { keyId: string; keySecret: string } {
+  const envRecord = (env && typeof env === "object" ? env : {}) as Record<string, string | undefined>;
+
+  const keyId =
+    envRecord.RAZORPAY_KEY_ID ||
+    process.env.RAZORPAY_KEY_ID ||
+    import.meta.env?.RAZORPAY_KEY_ID ||
+    process.env.VITE_RAZORPAY_KEY_ID ||
+    import.meta.env?.VITE_RAZORPAY_KEY_ID ||
+    "";
+
+  const keySecret =
+    envRecord.RAZORPAY_KEY_SECRET ||
+    process.env.RAZORPAY_KEY_SECRET ||
+    import.meta.env?.RAZORPAY_KEY_SECRET ||
+    "";
+
+  return { keyId, keySecret };
+}
+
+/**
+ * STEP 1: BACKEND - Create Order
+ * - Endpoint: POST /api/create-order
+ * - Validates amount >= 100 paise
+ * - Handles auth failures (401)
+ * - Handles Razorpay API errors (500)
+ * - Returns { order_id, amount, currency }
+ */
+export async function processCreateOrder(
+  body: CreateOrderInput,
+  env?: unknown
+): Promise<{ status: number; data: Record<string, unknown> }> {
+  const { keyId, keySecret } = getRazorpayCredentials(env);
+
+  if (!keyId || !keySecret) {
+    return {
+      status: 401,
+      data: {
+        error: "Authentication failed. Razorpay credentials are not configured.",
+      },
+    };
+  }
+
+  const rawAmount = Number(body.amount);
+  if (isNaN(rawAmount) || rawAmount < 100) {
+    return {
+      status: 400,
+      data: {
+        error: "Invalid amount. Minimum amount is 100 paise (₹1).",
+      },
+    };
+  }
+
+  const currency = body.currency || "INR";
+  const receipt = body.receipt || `rcpt_${Date.now()}`;
+
+  try {
+    const razorpay = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(rawAmount),
+      currency,
+      receipt,
+    });
+
+    return {
+      status: 200,
+      data: {
+        order_id: order.id,
+        amount: order.amount,
+        currency: order.currency,
+      },
+    };
+  } catch (err: unknown) {
+    console.error("Razorpay order creation error:", err);
+    const errorObj = err as {
+      statusCode?: number;
+      error?: { description?: string; code?: string };
+      message?: string;
+    };
+
+    if (errorObj?.statusCode === 401 || errorObj?.error?.code === "BAD_REQUEST_ERROR") {
+      return {
+        status: errorObj.statusCode || 401,
+        data: {
+          error: errorObj?.error?.description || errorObj?.message || "Razorpay authentication failed",
+        },
+      };
+    }
+
+    return {
+      status: 500,
+      data: {
+        error: errorObj?.error?.description || errorObj?.message || "Failed to create Razorpay order",
+      },
+    };
+  }
+}
+
+/**
+ * STEP 3: BACKEND - Verify Signature
+ * - Endpoint: POST /api/verify-payment
+ * - Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+ * - Validates missing fields (400)
+ * - Returns 400 on signature mismatch (do NOT mark as paid)
+ * - Returns 200 on success
+ */
+export async function processVerifyPayment(
+  body: VerifyPaymentInput,
+  env?: unknown
+): Promise<{ status: number; data: Record<string, unknown> }> {
+  const { keySecret } = getRazorpayCredentials(env);
+
+  const orderId = body.razorpay_order_id || body.order_id;
+  const paymentId = body.razorpay_payment_id || body.payment_id;
+  const signature = body.razorpay_signature || body.signature;
+
+  if (!orderId || !paymentId || !signature) {
+    return {
+      status: 400,
+      data: {
+        success: false,
+        message: "Missing required payment fields: razorpay_order_id, razorpay_payment_id, razorpay_signature",
+      },
+    };
+  }
+
+  if (!keySecret) {
+    return {
+      status: 401,
+      data: {
+        success: false,
+        message: "Authentication failed. Razorpay key secret is not configured.",
+      },
+    };
+  }
+
+  try {
+    const text = `${orderId}|${paymentId}`;
+    const generatedSignature = crypto
+      .createHmac("sha256", keySecret)
+      .update(text)
+      .digest("hex");
+
+    const isMatch = generatedSignature === signature;
+
+    if (!isMatch) {
+      return {
+        status: 400,
+        data: {
+          success: false,
+          message: "Signature mismatch. Payment verification failed.",
+        },
+      };
+    }
+
+    return {
+      status: 200,
+      data: {
+        success: true,
+        message: "Payment verified successfully",
+        order_id: orderId,
+        payment_id: paymentId,
+      },
+    };
+  } catch (err: unknown) {
+    console.error("Signature verification error:", err);
+    return {
+      status: 500,
+      data: {
+        success: false,
+        message: "Internal server error during payment verification",
+      },
+    };
+  }
+}
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+/**
+ * Standard Web Request Handler for POST /api/create-order
+ */
+export async function handleCreateOrder(request: Request, env?: unknown): Promise<Response> {
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
+  if (request.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+
+  let body: CreateOrderInput = { amount: 0 };
+  try {
+    body = (await request.json()) as CreateOrderInput;
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+
+  const result = await processCreateOrder(body, env);
+  return new Response(JSON.stringify(result.data), {
+    status: result.status,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
+}
+
+/**
+ * Standard Web Request Handler for POST /api/verify-payment
+ */
+export async function handleVerifyPayment(request: Request, env?: unknown): Promise<Response> {
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
+  if (request.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+
+  let body: VerifyPaymentInput = {};
+  try {
+    body = (await request.json()) as VerifyPaymentInput;
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    });
+  }
+
+  const result = await processVerifyPayment(body, env);
+  return new Response(JSON.stringify(result.data), {
+    status: result.status,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
+}
+
+/**
+ * Connect/Node Middleware for Vite dev server
+ */
+export function razorpayDevMiddleware(
+  req: { url?: string; method?: string; on: (event: string, cb: (chunk?: unknown) => void) => void },
+  res: { statusCode: number; setHeader: (k: string, v: string) => void; end: (content: string) => void },
+  next: () => void
+) {
+  const url = req.url ? new URL(req.url, "http://localhost").pathname : "";
+
+  if (req.method === "OPTIONS" && (url === "/api/create-order" || url === "/api/verify-payment")) {
+    res.statusCode = 204;
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.end("");
+    return;
+  }
+
+  if (url === "/api/create-order" && req.method === "POST") {
+    let raw = "";
+    req.on("data", (chunk) => {
+      raw += String(chunk);
+    });
+    req.on("end", async () => {
+      try {
+        const body = raw ? JSON.parse(raw) : {};
+        const result = await processCreateOrder(body);
+        res.statusCode = result.status;
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.end(JSON.stringify(result.data));
+      } catch (err: unknown) {
+        const msg = (err as Error)?.message || "Internal server error";
+        res.statusCode = 500;
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.end(JSON.stringify({ error: msg }));
+      }
+    });
+    return;
+  }
+
+  if (url === "/api/verify-payment" && req.method === "POST") {
+    let raw = "";
+    req.on("data", (chunk) => {
+      raw += String(chunk);
+    });
+    req.on("end", async () => {
+      try {
+        const body = raw ? JSON.parse(raw) : {};
+        const result = await processVerifyPayment(body);
+        res.statusCode = result.status;
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.end(JSON.stringify(result.data));
+      } catch (err: unknown) {
+        const msg = (err as Error)?.message || "Internal server error";
+        res.statusCode = 500;
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.end(JSON.stringify({ error: msg }));
+      }
+    });
+    return;
+  }
+
+  next();
+}
