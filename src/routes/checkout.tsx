@@ -193,19 +193,22 @@ function CheckoutPage() {
                 const token = getAccessToken();
                 if (token) headers["Authorization"] = `Bearer ${token}`;
 
+                // Map Razorpay payment to 'card' so Django database accepts and persists the order
+                const dbPaymentMethod = data.method === "cod" ? "cod" : "card";
+
                 const orderBackendRes = await fetch(`${apiBase}/api/orders/checkout/`, {
                   method: "POST",
                   headers,
                   body: JSON.stringify({
-                    email: data.email,
-                    phone: data.phone,
-                    first_name: data.firstName,
-                    last_name: data.lastName,
-                    street_address: data.street,
-                    city: data.city,
-                    state: data.state,
-                    zip_code: data.zip,
-                    payment_method: "razorpay",
+                    email: data.email?.trim(),
+                    phone: data.phone?.trim() || "",
+                    first_name: data.firstName?.trim() || "Customer",
+                    last_name: data.lastName?.trim() || "",
+                    street_address: data.street?.trim() || "Studio Collection",
+                    city: data.city?.trim() || "Mumbai",
+                    state: data.state?.trim() || "Maharashtra",
+                    zip_code: data.zip?.trim() || "400001",
+                    payment_method: dbPaymentMethod,
                     transaction_id: response.razorpay_payment_id,
                     razorpay_order_id: response.razorpay_order_id,
                     cart_items: orderedItems.map((i) => ({
@@ -219,12 +222,16 @@ function CheckoutPage() {
 
                 if (orderBackendRes.ok) {
                   const backendOrderData = await orderBackendRes.json();
+                  console.log("[Checkout] Successfully saved order to database:", backendOrderData);
                   if (backendOrderData?.order_number) {
                     orderNumber = backendOrderData.order_number;
                   }
+                } else {
+                  const errText = await orderBackendRes.text();
+                  console.error("[Checkout] Failed to save order to database:", orderBackendRes.status, errText);
                 }
               } catch (syncErr) {
-                console.warn("Backend order sync notice:", syncErr);
+                console.error("[Checkout] Error syncing order to database:", syncErr);
               }
 
               // 6. Record confirmed order for instant tracking
@@ -309,14 +316,14 @@ function CheckoutPage() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          email: data.email,
-          phone: data.phone,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          street_address: data.street,
-          city: data.city,
-          state: data.state,
-          zip_code: data.zip,
+          email: data.email?.trim(),
+          phone: data.phone?.trim() || "",
+          first_name: data.firstName?.trim() || "Customer",
+          last_name: data.lastName?.trim() || "",
+          street_address: data.street?.trim() || "Studio Collection",
+          city: data.city?.trim() || "Mumbai",
+          state: data.state?.trim() || "Maharashtra",
+          zip_code: data.zip?.trim() || "400001",
           payment_method: "cod",
           cart_items: orderedItems.map((i) => ({
             product_id: i.product.id,
@@ -329,12 +336,16 @@ function CheckoutPage() {
 
       if (res.ok) {
         const order = await res.json();
+        console.log("[Checkout COD] Successfully saved order to database:", order);
         if (order?.order_number) {
           orderNumber = order.order_number;
         }
+      } else {
+        const errText = await res.text();
+        console.error("[Checkout COD] Failed to save order to database:", res.status, errText);
       }
     } catch (err) {
-      console.warn("Backend order creation warning:", err);
+      console.error("[Checkout COD] Error saving order to database:", err);
     } finally {
       const orderRecord: ConfirmedOrderDetails = {
         orderNumber,
