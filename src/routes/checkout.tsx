@@ -1,8 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Lock, CreditCard, Check, ChevronRight, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  Lock,
+  CreditCard,
+  Check,
+  ChevronRight,
+  ArrowLeft,
+  ShieldCheck,
+  Sparkles,
+  CheckCircle2,
+  PackageCheck,
+  ShoppingBag,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
-import { useStore } from "@/hooks/use-store";
+import { useStore, type CartItem } from "@/hooks/use-store";
 import { useAuth } from "@/contexts/auth-context";
 import { getAccessToken } from "@/lib/auth";
 import { GemstoneLoader } from "@/components/sk/Loader";
@@ -21,11 +32,25 @@ export const Route = createFileRoute("/checkout")({
 type Step = 0 | 1 | 2;
 const STEPS = ["Contact", "Shipping", "Payment"] as const;
 
+interface ConfirmedOrderDetails {
+  orderNumber: string;
+  paymentId?: string;
+  orderId?: string;
+  total: number;
+  email: string;
+  customerName: string;
+  address: string;
+  items: CartItem[];
+  date: string;
+  status: string;
+}
+
 function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useStore();
   const { user } = useAuth();
   const [step, setStep] = useState<Step>(0);
   const [processing, setProcessing] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrderDetails | null>(null);
   const navigate = useNavigate();
   const shipping = 12;
   const total = cartTotal + shipping;
@@ -158,14 +183,17 @@ function CheckoutPage() {
             toast.dismiss(verifyToast);
 
             if (verifyRes.success) {
-              // Optionally sync with backend order database if available
+              let orderNumber = `CP-${Date.now().toString().slice(-6)}`;
+              const orderedItems = [...cart];
+
+              // 5. Submit confirmed order to backend
               try {
                 const apiBase = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
                 const headers: Record<string, string> = { "Content-Type": "application/json" };
                 const token = getAccessToken();
                 if (token) headers["Authorization"] = `Bearer ${token}`;
 
-                await fetch(`${apiBase}/api/orders/checkout/`, {
+                const orderBackendRes = await fetch(`${apiBase}/api/orders/checkout/`, {
                   method: "POST",
                   headers,
                   body: JSON.stringify({
@@ -180,7 +208,7 @@ function CheckoutPage() {
                     payment_method: "razorpay",
                     transaction_id: response.razorpay_payment_id,
                     razorpay_order_id: response.razorpay_order_id,
-                    cart_items: cart.map((i) => ({
+                    cart_items: orderedItems.map((i) => ({
                       product_id: i.product.id,
                       name: i.product.name,
                       price: i.product.price,
@@ -188,15 +216,45 @@ function CheckoutPage() {
                     })),
                   }),
                 });
+
+                if (orderBackendRes.ok) {
+                  const backendOrderData = await orderBackendRes.json();
+                  if (backendOrderData?.order_number) {
+                    orderNumber = backendOrderData.order_number;
+                  }
+                }
               } catch (syncErr) {
-                console.warn("Order sync warning:", syncErr);
+                console.warn("Backend order sync notice:", syncErr);
               }
 
+              // 6. Record confirmed order for instant tracking
+              const orderRecord: ConfirmedOrderDetails = {
+                orderNumber,
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                total,
+                email: data.email,
+                customerName: `${data.firstName} ${data.lastName}`.trim() || data.email,
+                address: `${data.street}, ${data.city}, ${data.state} ${data.zip}`.replace(/^,\s*/, ""),
+                items: orderedItems,
+                date: new Date().toISOString(),
+                status: "Order Placed & Confirmed",
+              };
+
+              try {
+                const existing = JSON.parse(localStorage.getItem("cp_tracked_orders") || "[]");
+                localStorage.setItem("cp_tracked_orders", JSON.stringify([orderRecord, ...existing.filter((o: any) => o.orderNumber !== orderNumber)]));
+                localStorage.setItem("last_confirmed_order", JSON.stringify(orderRecord));
+              } catch (storageErr) {
+                console.warn("Storage error:", storageErr);
+              }
+
+              // 7. Clear cart & confirm order
               await clearCart();
-              toast.success("Payment Verified & Order Placed!", {
-                description: `Razorpay Payment ID: ${response.razorpay_payment_id}`,
+              setConfirmedOrder(orderRecord);
+              toast.success("Order Confirmed & Placed!", {
+                description: `Order #${orderNumber} has been received.`,
               });
-              navigate({ to: "/track" });
             }
           } catch (err: unknown) {
             toast.dismiss(verifyToast);
@@ -236,6 +294,9 @@ function CheckoutPage() {
    */
   const handleCodPayment = async () => {
     setProcessing(true);
+    let orderNumber = `CP-${Date.now().toString().slice(-6)}`;
+    const orderedItems = [...cart];
+
     try {
       const apiBase = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -257,7 +318,7 @@ function CheckoutPage() {
           state: data.state,
           zip_code: data.zip,
           payment_method: "cod",
-          cart_items: cart.map((i) => ({
+          cart_items: orderedItems.map((i) => ({
             product_id: i.product.id,
             name: i.product.name,
             price: i.product.price,
@@ -265,22 +326,142 @@ function CheckoutPage() {
           })),
         }),
       });
-      const order = await res.json();
+
       if (res.ok) {
-        await clearCart();
-        toast.success("Order placed successfully!", { description: `Order #${order.order_number} is on its way.` });
-        navigate({ to: "/track", search: { order: order.order_number } });
-      } else {
-        toast.error("Checkout failed", { description: order.detail || "Please check your details." });
+        const order = await res.json();
+        if (order?.order_number) {
+          orderNumber = order.order_number;
+        }
       }
     } catch (err) {
-      await clearCart();
-      toast.success("Order placed", { description: "Your velvet box is on its way." });
-      navigate({ to: "/track" });
+      console.warn("Backend order creation warning:", err);
     } finally {
+      const orderRecord: ConfirmedOrderDetails = {
+        orderNumber,
+        total,
+        email: data.email,
+        customerName: `${data.firstName} ${data.lastName}`.trim() || data.email,
+        address: `${data.street}, ${data.city}, ${data.state} ${data.zip}`.replace(/^,\s*/, ""),
+        items: orderedItems,
+        date: new Date().toISOString(),
+        status: "Order Placed & Confirmed (COD)",
+      };
+
+      try {
+        const existing = JSON.parse(localStorage.getItem("cp_tracked_orders") || "[]");
+        localStorage.setItem("cp_tracked_orders", JSON.stringify([orderRecord, ...existing.filter((o: any) => o.orderNumber !== orderNumber)]));
+        localStorage.setItem("last_confirmed_order", JSON.stringify(orderRecord));
+      } catch (e) {}
+
+      await clearCart();
+      setConfirmedOrder(orderRecord);
       setProcessing(false);
+      toast.success("Order Placed Successfully!", {
+        description: `Order #${orderNumber} is confirmed.`,
+      });
     }
   };
+
+  // When order is confirmed, display celebratory confirmation view
+  if (confirmedOrder) {
+    return (
+      <SiteLayout>
+        <section className="bg-lavender-gradient pt-32 pb-16 md:pt-40">
+          <div className="mx-auto max-w-3xl px-6 text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 mb-6 shadow-soft animate-in zoom-in-95 duration-500">
+              <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+            </div>
+            <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--gold)]">
+              Payment Verified &amp; Confirmed
+            </p>
+            <h1 className="mt-2 font-display text-4xl sm:text-5xl text-foreground">
+              Your Order is Confirmed!
+            </h1>
+            <p className="mt-3 text-sm sm:text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
+              Thank you, <strong className="text-foreground font-semibold">{confirmedOrder.customerName}</strong>. Your artisanal jewelry order has been received and is now entering our atelier to be handcrafted, polished, and presented in our signature velvet keepsake box.
+            </p>
+
+            <div className="mt-8 rounded-3xl border border-border bg-card p-6 sm:p-8 text-left shadow-luxe depth-3d">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-border gap-4">
+                <div>
+                  <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-muted-foreground">Order Reference</span>
+                  <p className="font-serif text-2xl text-foreground font-semibold">#{confirmedOrder.orderNumber}</p>
+                </div>
+                {confirmedOrder.paymentId && (
+                  <div className="sm:text-right">
+                    <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-muted-foreground">Razorpay Transaction</span>
+                    <p className="font-mono text-xs text-[var(--royal)] font-medium">{confirmedOrder.paymentId}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Reserved Pieces */}
+              <div className="py-6 border-b border-border space-y-4">
+                <h3 className="font-serif text-sm uppercase tracking-wider text-muted-foreground">Reserved Pieces</h3>
+                <div className="space-y-3">
+                  {confirmedOrder.items.map((i) => (
+                    <div key={i.product.id} className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={i.product.image}
+                          alt={i.product.name}
+                          className="h-14 w-12 rounded-xl object-cover border border-border"
+                        />
+                        <div>
+                          <p className="font-serif text-sm font-medium text-foreground">{i.product.name}</p>
+                          <p className="text-xs text-muted-foreground">Qty: {i.qty}</p>
+                        </div>
+                      </div>
+                      <span className="font-display text-base text-foreground">${i.product.price * i.qty}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Destination & Total */}
+              <div className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                <div>
+                  <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-muted-foreground block mb-1">
+                    Shipping Destination
+                  </span>
+                  <p className="text-foreground font-medium">{confirmedOrder.address || "Studio Dispatch"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Notification sent to: {confirmedOrder.email}</p>
+                </div>
+                <div className="sm:text-right flex flex-col justify-end">
+                  <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-muted-foreground block mb-1">
+                    Total Amount
+                  </span>
+                  <p className="font-display text-3xl text-foreground">${confirmedOrder.total}</p>
+                  {confirmedOrder.paymentId ? (
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5">✦ Paid via Razorpay Secure</span>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground font-medium mt-0.5">✦ Pay on Delivery</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/track"
+                search={{ order: confirmedOrder.orderNumber }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] px-8 py-4 text-xs uppercase tracking-[0.2em] text-white shadow-luxe depth-3d hover:scale-105 transition-transform"
+              >
+                <PackageCheck className="h-4 w-4" /> Track Fulfillment Progress
+              </Link>
+              <Link
+                to="/shop"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-8 py-4 text-xs uppercase tracking-[0.2em] text-foreground hover:bg-secondary transition-colors"
+              >
+                <ShoppingBag className="h-4 w-4" /> Continue Shopping
+              </Link>
+            </div>
+          </div>
+        </section>
+      </SiteLayout>
+    );
+  }
 
   return (
     <SiteLayout>

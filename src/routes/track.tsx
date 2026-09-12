@@ -184,6 +184,45 @@ export default function TrackPage() {
           });
         }
       } catch (err: any) {
+        // Fallback: check locally confirmed orders
+        try {
+          const localOrders = JSON.parse(localStorage.getItem("cp_tracked_orders") || "[]");
+          const found = localOrders.find((lo: any) =>
+            (effectiveOrder && (lo.orderNumber.toLowerCase() === effectiveOrder.toLowerCase() || lo.orderNumber.toLowerCase().endsWith(effectiveOrder.toLowerCase()))) ||
+            (effectiveEmail && lo.email.toLowerCase() === effectiveEmail.toLowerCase())
+          );
+          if (found) {
+            const localTrackingResp: TrackingResponse = {
+              id: found.orderNumber,
+              order_number: found.orderNumber,
+              status: "placed",
+              status_display: "Order Placed & Confirmed",
+              created_at: found.date,
+              total_amount: found.total,
+              products: (found.items || []).map((i: any) => ({
+                id: i.product?.id || "item",
+                name: i.product?.name || "Artisan Jewelry Piece",
+                price: i.product?.price || 0,
+                quantity: i.qty || 1,
+                item_total: (i.product?.price || 0) * (i.qty || 1),
+                image: i.product?.image || null,
+              })),
+              user: {
+                name: found.customerName || "Collector",
+                email: found.email || "",
+              },
+            };
+            setActiveTracking(localTrackingResp);
+            setSelectedOrderNum(found.orderNumber);
+            setInputOrderNum(found.orderNumber);
+            setUserOrders((prev) => [localTrackingResp, ...prev.filter((o) => o.order_number !== found.orderNumber)]);
+            setErrorMessage("");
+            return;
+          }
+        } catch (localErr) {
+          console.warn("Local tracking fallback notice:", localErr);
+        }
+
         setActiveTracking(null);
         setErrorMessage(err.message || "Failed to retrieve tracking details.");
       } finally {
