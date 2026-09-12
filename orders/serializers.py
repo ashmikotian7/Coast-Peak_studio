@@ -304,7 +304,7 @@ class CheckoutCreateSerializer(serializers.Serializer):
     city = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     state = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     zip_code = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
-    payment_method = serializers.ChoiceField(choices=['card', 'upi', 'cod'], default='card')
+    payment_method = serializers.ChoiceField(choices=['card', 'upi', 'cod', 'razorpay'], default='card')
     cart_items = serializers.ListField(
         child=serializers.DictField(),
         required=False,
@@ -352,6 +352,17 @@ class CheckoutCreateSerializer(serializers.Serializer):
         # 4. Handle items / cart_items aliases
         if 'cart_items' not in mutable_data and 'items' in mutable_data:
             mutable_data['cart_items'] = mutable_data['items']
+
+        # 5. Normalize payment_method (support razorpay, online, upi, cod)
+        pm = str(mutable_data.get('payment_method', 'card')).lower().strip()
+        if pm in ['razorpay', 'online', 'card', 'credit_card', 'debit_card', 'stripe']:
+            mutable_data['payment_method'] = 'card'
+        elif pm in ['upi', 'gpay', 'phonepe', 'paytm']:
+            mutable_data['payment_method'] = 'upi'
+        elif pm in ['cod', 'cash']:
+            mutable_data['payment_method'] = 'cod'
+        else:
+            mutable_data['payment_method'] = 'card'
 
         return super().to_internal_value(mutable_data)
 
