@@ -298,14 +298,14 @@ export default function ProfilePage() {
           </div>
 
           {/* Shipping Address Card */}
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-soft depth-3d">
+          <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft depth-3d">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-[var(--royal)]">
                   <MapPin className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-display text-2xl">Shipping Address</h3>
+                  <h3 className="font-display text-xl sm:text-2xl">Shipping Address</h3>
                   <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                     Stored delivery vault
                   </p>
@@ -373,7 +373,7 @@ export default function ProfilePage() {
                   value={addressDraft.street_address}
                   onChange={(v) => setAddressDraft({ ...addressDraft, street_address: v })}
                 />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Field
                     label="City"
                     value={addressDraft.city}
@@ -400,7 +400,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Order History Section */}
-          <div className="md:col-span-2 rounded-3xl border border-border bg-card p-6 shadow-soft depth-3d mt-2">
+          <div className="md:col-span-2 rounded-3xl border border-border bg-card p-4 sm:p-6 shadow-soft depth-3d mt-2">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-4 mb-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-[var(--royal)]">

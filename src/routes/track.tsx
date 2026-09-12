@@ -504,9 +504,9 @@ export default function TrackPage() {
                     const isSentStage = idx === 2 && isCurrent;
 
                     return (
-                      <li key={step.key} className="relative flex items-start gap-5 pl-2">
+                      <li key={step.key} className="relative flex items-start gap-3 sm:gap-5 pl-1 sm:pl-2">
                         <div
-                          className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                          className={`relative z-10 flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
                             isCompleted || isSentStage
                               ? "bg-gradient-to-br from-[var(--royal)] to-[var(--wine)] text-white shadow-soft"
                               : isCurrent
@@ -515,18 +515,18 @@ export default function TrackPage() {
                           }`}
                         >
                           {isCompleted || isSentStage ? (
-                            <CheckCircle2 className="h-6 w-6" />
+                            <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
                           ) : isCurrent ? (
-                            <Clock className="h-6 w-6" />
+                            <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
                           ) : (
-                            <Circle className="h-5 w-5 opacity-60" />
+                            <Circle className="h-4 w-4 sm:h-5 sm:w-5 opacity-60" />
                           )}
                         </div>
 
-                        <div className="pt-1.5 flex-1">
-                          <div className="flex items-center justify-between">
+                        <div className="pt-1 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center justify-between gap-1.5">
                             <h3
-                              className={`font-display text-xl ${
+                              className={`font-display text-lg sm:text-xl ${
                                 isCurrent
                                   ? "text-[var(--royal)] font-bold"
                                   : isCompleted
@@ -550,7 +550,7 @@ export default function TrackPage() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-0.5 font-serif text-sm text-muted-foreground">
+                          <p className="mt-0.5 font-serif text-xs sm:text-sm text-muted-foreground">
                             {step.description}
                           </p>
                         </div>
@@ -563,7 +563,7 @@ export default function TrackPage() {
               {/* Customer & Destination Details */}
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Customer Information */}
-                <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+                <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-[var(--royal)]">
                       <UserIcon className="h-5 w-5" />
@@ -575,13 +575,13 @@ export default function TrackPage() {
                   </div>
                   <div className="font-serif text-sm space-y-1.5 text-foreground/80">
                     <p className="font-medium text-foreground">{activeTracking.user.name || "Valued Collector"}</p>
-                    <p>{activeTracking.user.email}</p>
+                    <p className="break-all">{activeTracking.user.email}</p>
                     {activeTracking.user.phone && <p className="font-mono text-xs">{activeTracking.user.phone}</p>}
                   </div>
                 </div>
 
                 {/* Destination Shipping Address */}
-                <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+                <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-[var(--royal)]">
                       <MapPin className="h-5 w-5" />
@@ -613,11 +613,11 @@ export default function TrackPage() {
               </div>
 
               {/* Products in this Order */}
-              <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+              <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="h-5 w-5 text-[var(--royal)]" />
-                    <h3 className="font-display text-xl">
+                    <h3 className="font-display text-lg sm:text-xl">
                       Pieces in this Order ({activeTracking.products.length})
                     </h3>
                   </div>
@@ -634,18 +634,18 @@ export default function TrackPage() {
                     return (
                       <li
                         key={item.id}
-                        className={`flex items-center gap-4 py-3.5 px-3 rounded-2xl transition-colors ${
+                        className={`flex items-center gap-3 sm:gap-4 py-3.5 px-2 sm:px-3 rounded-2xl transition-colors ${
                           isFilteredPiece ? "bg-[var(--royal)]/5 ring-1 ring-[var(--royal)]/20" : ""
                         }`}
                       >
                         <img
                           src={item.image || getFallbackImage()}
                           alt={item.name}
-                          className="h-16 w-14 rounded-xl object-cover border border-border shadow-sm"
+                          className="h-12 w-11 sm:h-16 sm:w-14 rounded-xl object-cover border border-border shadow-sm shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-display text-base truncate">{item.name}</h4>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <h4 className="font-display text-sm sm:text-base truncate">{item.name}</h4>
                             {isFilteredPiece && (
                               <span className="rounded-full bg-[var(--royal)] text-white text-[9px] px-2 py-0.5 uppercase tracking-wider font-semibold">
                                 Selected Piece
@@ -656,8 +656,8 @@ export default function TrackPage() {
                             Qty: {item.quantity} × ${Number(item.price).toFixed(2)}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-display text-lg text-gold-gradient">
+                        <div className="text-right shrink-0">
+                          <p className="font-display text-base sm:text-lg text-gold-gradient">
                             ${Number(item.item_total).toFixed(2)}
                           </p>
                         </div>

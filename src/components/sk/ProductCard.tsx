@@ -48,6 +48,21 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             />
           </div>
 
+          {/* Mobile quick add button */}
+          <button
+            type="button"
+            aria-label="Quick add to cart"
+            onClick={(e) => {
+              e.preventDefault();
+              addToCart(product);
+              toast.success("Added to cart", { description: product.name });
+            }}
+            className="sm:hidden absolute right-3 bottom-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full glass text-foreground shadow-soft transition-transform active:scale-90"
+          >
+            <ShoppingBag className="h-4 w-4" />
+          </button>
+
+          {/* Desktop quick add hover bar */}
           <button
             type="button"
             onClick={(e) => {
@@ -55,20 +70,20 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
               addToCart(product);
               toast.success("Added to cart", { description: product.name });
             }}
-            className="absolute inset-x-4 bottom-4 inline-flex translate-y-3 items-center justify-center gap-2 rounded-full bg-foreground py-3 text-sm font-medium text-background opacity-0 shadow-luxe transition-all duration-500 ease-luxe group-hover:translate-y-0 group-hover:opacity-100"
+            className="hidden sm:inline-flex absolute inset-x-4 bottom-4 translate-y-3 items-center justify-center gap-2 rounded-full bg-foreground py-3 text-sm font-medium text-background opacity-0 shadow-luxe transition-all duration-500 ease-luxe group-hover:translate-y-0 group-hover:opacity-100"
           >
             <ShoppingBag className="h-4 w-4" /> Quick add
           </button>
         </div>
 
-        <div className="mt-4 flex items-start justify-between gap-3 px-1">
-          <div>
-            <h3 className="font-display text-xl leading-tight">{product.name}</h3>
-            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="mt-3 sm:mt-4 flex items-start justify-between gap-2 px-1">
+          <div className="min-w-0">
+            <h3 className="font-display text-base sm:text-xl leading-tight truncate">{product.name}</h3>
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs uppercase tracking-[0.18em] text-muted-foreground">
               {product.category}
             </p>
           </div>
-          <p className="font-display text-xl text-gold-gradient">${product.price}</p>
+          <p className="font-display text-base sm:text-xl text-gold-gradient shrink-0 font-medium">${product.price}</p>
         </div>
       </Link>
     </div>

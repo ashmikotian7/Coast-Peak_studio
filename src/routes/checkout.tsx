@@ -148,12 +148,12 @@ function CheckoutPage() {
             )}
             {step === 1 && (
               <FormBlock title="Shipping address">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input placeholder="First name" required value={data.firstName} onChange={set("firstName")} />
                   <Input placeholder="Last name" required value={data.lastName} onChange={set("lastName")} />
                 </div>
                 <Input placeholder="Street address" required value={data.street} onChange={set("street")} />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input placeholder="City" required value={data.city} onChange={set("city")} />
                   <Input placeholder="State" required value={data.state} onChange={set("state")} />
                   <Input placeholder="ZIP" required value={data.zip} onChange={set("zip")} />
@@ -162,7 +162,7 @@ function CheckoutPage() {
             )}
             {step === 2 && (
               <FormBlock title="Payment method">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                   {([
                     { v: "card", l: "Card" },
                     { v: "upi", l: "UPI" },
@@ -172,8 +172,8 @@ function CheckoutPage() {
                       key={m.v}
                       type="button"
                       onClick={() => setData((d) => ({ ...d, method: m.v }))}
-                      className={`rounded-2xl border p-3 text-xs uppercase tracking-[0.2em] transition-all depth-3d ${data.method === m.v
-                          ? "border-[var(--royal)] bg-gradient-to-br from-[var(--royal)]/10 to-[var(--wine)]/10 text-foreground"
+                      className={`rounded-2xl border p-3 text-xs uppercase tracking-[0.2em] transition-all depth-3d text-center ${data.method === m.v
+                          ? "border-[var(--royal)] bg-gradient-to-br from-[var(--royal)]/10 to-[var(--wine)]/10 text-foreground font-semibold"
                           : "border-border bg-card text-muted-foreground hover:border-[var(--royal)]/60"
                         }`}
                     >
@@ -188,7 +188,7 @@ function CheckoutPage() {
                       <CreditCard className="h-4 w-4" /> Card details
                     </div>
                     <Input placeholder="Card number" className="mt-3" value={data.card} onChange={set("card")} />
-                    <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <Input placeholder="MM / YY" value={data.exp} onChange={set("exp")} />
                       <Input placeholder="CVC" value={data.cvc} onChange={set("cvc")} />
                     </div>
@@ -205,12 +205,12 @@ function CheckoutPage() {
               </FormBlock>
             )}
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {step > 0 && (
                 <button
                   type="button"
                   onClick={() => setStep((s) => (s - 1) as Step)}
-                  className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 text-xs uppercase tracking-[0.2em] hover:bg-secondary"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-3 text-xs uppercase tracking-[0.2em] hover:bg-secondary order-2 sm:order-1"
                 >
                   <ArrowLeft className="h-4 w-4" /> Back
                 </button>
@@ -218,7 +218,7 @@ function CheckoutPage() {
               <button
                 type="submit"
                 disabled={processing || cart.length === 0}
-                className="flex flex-1 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] py-4 text-sm uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform duration-300 ease-luxe hover:scale-[1.01] disabled:opacity-60"
+                className="flex flex-1 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] py-4 text-sm uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform duration-300 ease-luxe hover:scale-[1.01] disabled:opacity-60 order-1 sm:order-2"
               >
                 {processing ? <GemstoneLoader /> : step < 2 ? <>Continue <ChevronRight className="h-4 w-4" /></> : <>Pay ${total}</>}
               </button>

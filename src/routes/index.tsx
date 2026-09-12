@@ -77,15 +77,15 @@ function Hero() {
             </Link>
           </div>
 
-          <div className="mt-16 grid max-w-md grid-cols-3 gap-6 text-xs text-white/70 animate-fade-up" style={{ animationDelay: "0.55s" }}>
+          <div className="mt-12 sm:mt-16 grid max-w-md grid-cols-3 gap-3 sm:gap-6 text-xs text-white/70 animate-fade-up" style={{ animationDelay: "0.55s" }}>
             <HeroBadge icon={Sparkles} label="Handcrafted" />
             <HeroBadge icon={ShieldCheck} label="Lifetime care" />
             <HeroBadge icon={Truck} label="Free shipping" />
           </div>
         </div>
 
-        <div className="relative h-[60svh] [perspective:1200px] md:h-[80svh]">
-          <div className="tilt-3d absolute inset-0 animate-reveal-clip rounded-[120px_28px_120px_28px] overflow-hidden shadow-luxe">
+        <div className="relative h-[50svh] sm:h-[60svh] [perspective:1200px] md:h-[80svh]">
+          <div className="tilt-3d absolute inset-0 animate-reveal-clip rounded-[60px_20px_60px_20px] sm:rounded-[120px_28px_120px_28px] overflow-hidden shadow-luxe">
             <img
               src={heroImg}
               alt="Handcrafted amethyst ring on velvet"
@@ -98,14 +98,14 @@ function Hero() {
             <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--lavender)]">Maker</p>
             <p className="font-display text-lg">Sahana K. · Atelier</p>
           </div>
-          <div className="absolute -bottom-6 right-4 z-20 glass rounded-2xl px-5 py-4 shadow-luxe animate-fade-up" style={{ animationDelay: "0.9s" }}>
+          <div className="absolute bottom-4 right-4 sm:-bottom-6 sm:right-4 z-20 glass rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-luxe animate-fade-up" style={{ animationDelay: "0.9s" }}>
             <div className="flex items-center gap-2">
               <div className="flex">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star key={i} className="h-3 w-3 fill-[var(--gold)] text-[var(--gold)]" />
                 ))}
               </div>
-              <span className="font-serif text-sm">4.9 · 1,200 reviews</span>
+              <span className="font-serif text-xs sm:text-sm">4.9 · 1,200 reviews</span>
             </div>
           </div>
         </div>
@@ -352,15 +352,15 @@ function Newsletter() {
         <p className="mt-4 font-serif text-lg text-muted-foreground">
           Atelier notes, new drops, and early access — once a fortnight. Never more.
         </p>
-        <form className="mx-auto mt-8 flex max-w-md items-center gap-2 rounded-full border border-border bg-card p-1.5 shadow-soft">
+        <form className="mx-auto mt-8 flex flex-col sm:flex-row max-w-md items-stretch sm:items-center gap-2 rounded-2xl sm:rounded-full border border-border bg-card p-2 sm:p-1.5 shadow-soft">
           <input
             type="email"
             placeholder="your@email.com"
-            className="flex-1 bg-transparent px-4 font-serif text-base outline-none placeholder:text-muted-foreground"
+            className="flex-1 bg-transparent px-4 py-2 sm:py-1 font-serif text-base outline-none placeholder:text-muted-foreground"
           />
           <button
             type="button"
-            className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-transform duration-300 ease-luxe hover:scale-105"
+            className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-transform duration-300 ease-luxe hover:scale-105 shrink-0"
           >
             Subscribe
           </button>

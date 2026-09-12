@@ -24,35 +24,33 @@ function AboutPage() {
           <div className="absolute -left-32 top-20 h-96 w-96 rounded-full bg-[var(--royal)] blur-3xl float-3d" />
           <div className="absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-[var(--wine)] blur-3xl float-3d" style={{ animationDelay: "2s" }} />
         </div>
-        <div className="relative mx-auto w-full text-center animate-fade-in">
+        <div className="relative mx-auto w-full max-w-5xl px-6 md:px-12 text-center animate-fade-in">
           <div className="mb-8 flex items-center justify-center gap-4 animate-slide-down" style={{ animationDelay: '0.2s' }}>
-            <div className="h-px w-24 bg-gradient-to-r from-transparent via-[var(--lavender)] to-[var(--lavender)]" />
+            <div className="h-px w-16 sm:w-24 bg-gradient-to-r from-transparent via-[var(--lavender)] to-[var(--lavender)]" />
             <p className="font-serif text-xs uppercase tracking-[0.4em] text-[var(--lavender)]">The story of Coast &amp; Peak</p>
-            <div className="h-px w-24 bg-gradient-to-l from-transparent via-[var(--lavender)] to-[var(--lavender)]" />
+            <div className="h-px w-16 sm:w-24 bg-gradient-to-l from-transparent via-[var(--lavender)] to-[var(--lavender)]" />
           </div>
-          <h1 className="mt-6 font-display text-6xl md:text-8xl relative inline-block animate-scale-in" style={{ animationDelay: '0.4s' }}>
+          <h1 className="mt-6 font-display text-5xl sm:text-7xl md:text-8xl relative inline-block animate-scale-in" style={{ animationDelay: '0.4s' }}>
             <span className="relative z-10">A maison</span><br />
             <span className="relative z-10">of Two.</span>
             <div className="absolute -inset-4 bg-gradient-to-r from-[var(--royal)] via-[var(--wine)] to-[var(--royal)] opacity-20 blur-2xl -z-0" />
           </h1>
-          <div className="mx-auto mt-12 w-full max-w-4xl space-y-10 font-serif text-xl leading-relaxed text-white/80">
-            <p className="first-letter:text-6xl first-letter:font-display first-letter:text-[var(--lavender)] first-letter:float-left first-letter:mr-4 first-letter:mt-[-4px] animate-slide-up" style={{ animationDelay: '0.6s' }}>
+          <div className="mx-auto mt-12 w-full max-w-4xl space-y-8 sm:space-y-10 font-serif text-lg sm:text-xl leading-relaxed text-white/80 text-left sm:text-center">
+            <p className="first-letter:text-5xl sm:first-letter:text-6xl first-letter:font-display first-letter:text-[var(--lavender)] first-letter:float-left first-letter:mr-4 first-letter:mt-[-4px] animate-slide-up" style={{ animationDelay: '0.6s' }}>
               Welcome to Coast & Peak Studio! We are a two-member team of creators, and these are the pairs of hands behind every piece you see here.
             </p>
-            <p className="border-l-2 border-[var(--lavender)]/30 pl-6 animate-slide-up" style={{ animationDelay: '0.8s' }}>
+            <p className="border-l-2 border-[var(--lavender)]/30 pl-4 sm:pl-6 text-left animate-slide-up" style={{ animationDelay: '0.8s' }}>
               Our journey began in a classroom rather than an art studio. In 2026, we freshly graduated with our engineering degrees. While our brains were trained in structure and logic, our hearts always belonged to art, travel, and the beautiful landscapes of our home in Udupi.
             </p>
-            <blockquote className="relative my-12 border-l-4 border-[var(--lavender)] bg-gradient-to-r from-[var(--lavender)]/10 to-transparent pl-8 pr-4 py-6 italic text-white/90 rounded-r-lg animate-slide-up" style={{ animationDelay: '1s' }}>
-              <div className="absolute -left-2 top-0 text-6xl text-[var(--lavender)] opacity-30 font-serif">"</div>
-              <p className="text-2xl relative z-10">The real spark for Coast & Peak Studio happened completely by accident on a birthday. Wanting to give a truly meaningful gift, one of us hand-crafted a unique bouquet using vibrant satin ribbons for the other.</p>
-              <div className="absolute -right-2 bottom-[-20px] text-6xl text-[var(--lavender)] opacity-30 font-serif rotate-180">"</div>
+            <blockquote className="relative my-8 sm:my-12 border-l-4 border-[var(--lavender)] bg-gradient-to-r from-[var(--lavender)]/10 to-transparent pl-6 sm:pl-8 pr-4 py-5 sm:py-6 italic text-white/90 rounded-r-lg text-left animate-slide-up" style={{ animationDelay: '1s' }}>
+              <p className="text-xl sm:text-2xl relative z-10">The real spark for Coast & Peak Studio happened completely by accident on a birthday. Wanting to give a truly meaningful gift, one of us hand-crafted a unique bouquet using vibrant satin ribbons for the other.</p>
             </blockquote>
-            <p className="animate-slide-up" style={{ animationDelay: '1.2s' }}>
+            <p className="animate-slide-up text-left sm:text-center" style={{ animationDelay: '1.2s' }}>
               When the gift was opened, something clicked. Seeing the beauty of that everlasting bouquet, an idea popped up. We instantly realized we shared the exact same creative mindset and passion for handmade crafts. One conversation led to another, our shared dreams aligned, and Coast & Peak Studio was born.
             </p>
-            <p className="relative border-r-2 border-[var(--lavender)]/30 pr-6 text-right animate-slide-up" style={{ animationDelay: '1.4s' }}>
+            <p className="border-l-2 sm:border-l-0 sm:border-r-2 border-[var(--lavender)]/30 pl-4 sm:pl-0 sm:pr-6 text-left sm:text-right animate-slide-up" style={{ animationDelay: '1.4s' }}>
               What started as a birthday surprise has now grown into a shared canvas where we combine our love for intricate bangles, eternal florals, and fine art. We are so happy to have you along for the ride!
-              <span className="absolute -right-8 -top-2 text-4xl animate-pulse">✨</span>
+              <span className="inline-block ml-2 text-2xl sm:text-3xl animate-pulse">✨</span>
             </p>
           </div>
           <div className="mt-16 flex animate-bounce justify-center">

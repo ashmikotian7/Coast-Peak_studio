@@ -21,26 +21,26 @@ function ContactPage() {
       <section className="bg-lavender-gradient pt-32 pb-12 md:pt-40">
         <div className="mx-auto max-w-7xl px-6 text-center md:px-12">
           <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--royal)]">Write to the atelier</p>
-          <h1 className="mt-3 font-display text-5xl md:text-7xl">Say hello to Coast &amp; Peak</h1>
-          <p className="mx-auto mt-4 max-w-xl font-serif text-lg text-muted-foreground">
+          <h1 className="mt-3 font-display text-4xl sm:text-5xl md:text-7xl">Say hello to Coast &amp; Peak</h1>
+          <p className="mx-auto mt-4 max-w-xl font-serif text-base sm:text-lg text-muted-foreground">
             For custom pieces, press, or simply a kind word — Sahana reads everything herself.
           </p>
         </div>
       </section>
 
-      <section className="bg-background py-20">
+      <section className="bg-background py-16 md:py-20">
         <div className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-5 md:px-12">
           <form
             onSubmit={(e) => { e.preventDefault(); toast.success("Message sent", { description: "We'll write back within 48 hours." }); }}
             className="space-y-3 md:col-span-3"
           >
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input placeholder="Name" required className="rounded-full border border-border bg-card px-4 py-3 text-sm outline-none focus:border-[var(--royal)]" />
               <input placeholder="Email" type="email" required className="rounded-full border border-border bg-card px-4 py-3 text-sm outline-none focus:border-[var(--royal)]" />
             </div>
             <input placeholder="Subject" className="w-full rounded-full border border-border bg-card px-4 py-3 text-sm outline-none focus:border-[var(--royal)]" />
             <textarea rows={6} placeholder="Your note…" className="w-full rounded-3xl border border-border bg-card px-5 py-4 text-sm outline-none focus:border-[var(--royal)]" />
-            <button className="rounded-full bg-primary px-8 py-3 text-sm uppercase tracking-[0.2em] text-primary-foreground">Send</button>
+            <button className="rounded-full bg-primary px-8 py-3.5 text-sm uppercase tracking-[0.2em] text-primary-foreground w-full sm:w-auto">Send</button>
           </form>
 
           <aside className="space-y-5 md:col-span-2">

@@ -342,14 +342,14 @@ export default function OrdersPage() {
                     className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft transition-all duration-300 hover:shadow-luxe"
                   >
                     {/* Order Card Header */}
-                    <div className="flex flex-col gap-3 border-b border-border bg-secondary/30 p-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-3 border-b border-border bg-secondary/30 p-4 sm:p-6 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <span className="font-mono text-base font-bold text-[var(--royal)]">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                          <span className="font-mono text-sm sm:text-base font-bold text-[var(--royal)]">
                             Order #{order.order_number}
                           </span>
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
                           >
                             <span className="h-1.5 w-1.5 rounded-full bg-current" />
                             {order.status_display || statusStyle.label}
@@ -367,19 +367,19 @@ export default function OrdersPage() {
                         </p>
                       </div>
 
-                      <div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground block sm:text-right">
+                      <div className="sm:text-right">
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground block">
                           Total Amount ({order.total_items || order.items?.length || 0}{" "}
                           {(order.total_items || order.items?.length || 0) === 1 ? "item" : "items"})
                         </span>
-                        <p className="font-display text-2xl text-gold-gradient sm:text-right">
+                        <p className="font-display text-xl sm:text-2xl text-gold-gradient">
                           ${Number(order.total_amount).toFixed(2)}
                         </p>
                       </div>
                     </div>
 
                     {/* Order Body: Customer Info & Products with Controls Beside */}
-                    <div className="grid gap-6 p-6 md:grid-cols-12">
+                    <div className="grid gap-6 p-4 sm:p-6 md:grid-cols-12">
                       {/* Customer Info (4 Cols) */}
                       <div className="border-b border-border pb-4 md:border-b-0 md:border-r md:pb-0 md:pr-6 md:col-span-4">
                         <div className="flex items-center gap-2 mb-3">
@@ -395,7 +395,7 @@ export default function OrdersPage() {
                               "Collector"}
                           </p>
                           {order.email && (
-                            <p className="text-muted-foreground">{order.email}</p>
+                            <p className="text-muted-foreground break-all">{order.email}</p>
                           )}
                           {order.phone && (
                             <p className="font-mono text-xs text-muted-foreground">
@@ -433,7 +433,7 @@ export default function OrdersPage() {
 
                           {/* Controls right beside the products */}
                           <div className="flex items-center gap-2.5">
-                            {/* Status Dropdown: Default 'Order Placed', 'Preparing Order', 'Order Sent' */}
+                            {/* Status Dropdown */}
                             <div className="relative inline-flex items-center">
                               <select
                                 value={currentStage}
@@ -441,28 +441,28 @@ export default function OrdersPage() {
                                 onChange={(e) =>
                                   handleStatusChange(order.order_number, e.target.value)
                                 }
-                                className="rounded-full border border-border bg-background px-3.5 py-1.5 pr-8 text-xs font-medium outline-none transition-colors hover:border-[var(--royal)] focus:border-[var(--royal)] disabled:opacity-50 shadow-sm cursor-pointer"
+                                className="rounded-full border border-border bg-background px-3 py-1.5 pr-7 text-xs font-medium outline-none transition-colors hover:border-[var(--royal)] focus:border-[var(--royal)] disabled:opacity-50 shadow-sm cursor-pointer"
                               >
                                 <option value="placed">Order Placed</option>
                                 <option value="preparing">Preparing Order</option>
                                 <option value="dispatched">Order Sent</option>
                               </select>
-                              <ChevronDown className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                              <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground" />
                             </div>
                           </div>
                         </div>
 
                         {/* Product items list */}
-                        <div className="space-y-3">
+                        <div className="space-y-2.5">
                           {order.items?.map((p) => (
                             <div
                               key={p.id}
-                              className="flex items-center gap-3.5 rounded-2xl border border-border/70 bg-background/60 p-3"
+                              className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/60 p-2.5 sm:p-3"
                             >
                               <img
                                 src={p.image || getFallbackImage()}
                                 alt={p.product_name}
-                                className="h-12 w-12 rounded-xl object-cover border border-border"
+                                className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl object-cover border border-border shrink-0"
                               />
                               <div className="flex-1 min-w-0">
                                 <h5 className="font-display text-sm truncate text-foreground">
@@ -472,7 +472,7 @@ export default function OrdersPage() {
                                   Qty: {p.quantity} × ${Number(p.unit_price).toFixed(2)}
                                 </p>
                               </div>
-                              <span className="font-display text-base text-foreground">
+                              <span className="font-display text-base text-foreground shrink-0">
                                 ${Number(p.item_total).toFixed(2)}
                               </span>
                             </div>

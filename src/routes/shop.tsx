@@ -191,8 +191,8 @@ function ShopPage() {
 
       {/* Categories & Filter Bar */}
       <section className="sticky top-16 z-30 border-b border-border glass md:top-20">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4 md:px-12">
-          <div className="flex gap-1 overflow-x-auto">
+        <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 py-3 md:px-12 md:py-4">
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-none py-1">
             <Chip active={cat === "all"} onClick={() => handleCategoryChange("all")}>
               All Categories
             </Chip>
@@ -203,22 +203,23 @@ function ShopPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
             {(activeTag !== "all" || cat !== "all") && (
               <button
                 onClick={clearFilters}
-                className="hidden items-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:inline-flex"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
               >
-                <X className="h-3.5 w-3.5" /> Clear filters
+                <X className="h-3.5 w-3.5" /> Clear
               </button>
             )}
 
-            <div className="hidden items-center gap-2 md:flex">
-              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1.5">
+              <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <select
                 value={sort}
+                aria-label="Sort products"
                 onChange={(e) => setSort(e.target.value as "featured" | "low" | "high")}
-                className="rounded-full border border-border bg-background px-4 py-2 text-sm outline-none"
+                className="rounded-full border border-border bg-background px-3 py-1.5 text-xs sm:text-sm outline-none cursor-pointer"
               >
                 <option value="featured">Featured</option>
                 <option value="low">Price · Low to high</option>

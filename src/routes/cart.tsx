@@ -83,7 +83,7 @@ function CartPage() {
                     return (
                       <li
                         key={item.id ?? item.product.id}
-                        className="flex gap-4 rounded-3xl border border-border bg-card p-4 shadow-soft"
+                        className="flex gap-3 sm:gap-4 rounded-3xl border border-border bg-card p-3 sm:p-4 shadow-soft"
                       >
                         <Link to="/product/$id" params={{ id: item.product.id }} className="shrink-0">
                           <img
@@ -92,14 +92,14 @@ function CartPage() {
                             width={120}
                             height={150}
                             loading="lazy"
-                            className="h-28 w-24 rounded-2xl object-cover md:h-32 md:w-28"
+                            className="h-24 w-20 rounded-2xl object-cover sm:h-32 sm:w-28"
                           />
                         </Link>
-                        <div className="flex flex-1 flex-col">
-                          <div className="flex justify-between gap-2">
-                            <div>
-                              <h3 className="font-display text-xl">{item.product.name}</h3>
-                              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        <div className="flex flex-1 flex-col min-w-0">
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0">
+                              <h3 className="font-display text-lg sm:text-xl truncate">{item.product.name}</h3>
+                              <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-muted-foreground">
                                 {item.product.category}
                               </p>
                               {isOutOfStock ? (
@@ -116,33 +116,33 @@ function CartPage() {
                               type="button"
                               onClick={() => removeFromCart(identifier)}
                               aria-label="Remove"
-                              className="text-muted-foreground transition-colors hover:text-destructive"
+                              className="text-muted-foreground transition-colors hover:text-destructive shrink-0 p-1"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
 
-                          <div className="mt-auto flex items-end justify-between pt-3">
+                          <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-3">
                             <div className="inline-flex items-center rounded-full border border-border bg-background">
                               <button
                                 type="button"
                                 onClick={() => updateQty(identifier, item.qty - 1)}
-                                className="p-2 text-muted-foreground transition-colors hover:text-foreground"
+                                className="p-1.5 sm:p-2 text-muted-foreground transition-colors hover:text-foreground"
                                 aria-label="Decrease quantity"
                               >
                                 <Minus className="h-3.5 w-3.5" />
                               </button>
-                              <span className="w-8 text-center font-serif text-sm">{item.qty}</span>
+                              <span className="w-7 sm:w-8 text-center font-serif text-sm">{item.qty}</span>
                               <button
                                 type="button"
                                 onClick={() => updateQty(identifier, item.qty + 1)}
-                                className="p-2 text-muted-foreground transition-colors hover:text-foreground"
+                                className="p-1.5 sm:p-2 text-muted-foreground transition-colors hover:text-foreground"
                                 aria-label="Increase quantity"
                               >
                                 <Plus className="h-3.5 w-3.5" />
                               </button>
                             </div>
-                            <p className="font-display text-xl text-gold-gradient">
+                            <p className="font-display text-lg sm:text-xl text-gold-gradient">
                               ${item.item_total ?? item.product.price * item.qty}
                             </p>
                           </div>
@@ -153,7 +153,7 @@ function CartPage() {
                 </ul>
               </div>
 
-              <aside className="h-fit rounded-3xl border border-border bg-card p-6 shadow-soft md:sticky md:top-28">
+              <aside className="h-fit rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft md:sticky md:top-28">
                 <h2 className="font-display text-2xl">Order summary</h2>
                 <dl className="mt-6 space-y-3 font-serif">
                   <Row label="Subtotal" value={`$${cartTotal}`} />
@@ -167,11 +167,11 @@ function CartPage() {
                   <div className="mt-2 flex gap-2">
                     <input
                       placeholder="SKVELVET"
-                      className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm outline-none focus:border-[var(--royal)]"
+                      className="flex-1 min-w-0 rounded-full border border-border bg-background px-4 py-2 text-sm outline-none focus:border-[var(--royal)]"
                     />
                     <button
                       type="button"
-                      className="rounded-full bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
+                      className="rounded-full bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 shrink-0"
                     >
                       Apply
                     </button>

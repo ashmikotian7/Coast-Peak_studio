@@ -106,39 +106,39 @@ export function Navbar() {
       >
         <div className="absolute inset-0 bg-hero-gradient" onClick={() => setOpen(false)} aria-hidden />
         <div
-          className={`relative flex h-full flex-col p-6 text-[var(--ivory)] transition-transform duration-500 ease-luxe ${
+          className={`relative flex h-full flex-col p-6 text-[var(--ivory)] transition-transform duration-500 ease-luxe overflow-y-auto ${
             open ? "translate-y-0" : "-translate-y-4"
           }`}
         >
-          <div className="flex items-center justify-between text-white">
+          <div className="flex items-center justify-between text-white shrink-0">
             <Logo />
             <button onClick={() => setOpen(false)} className="rounded-full border border-white/20 p-2" aria-label="Close menu">
               <X className="h-5 w-5" />
             </button>
           </div>
-          <nav className="mt-16 flex flex-col gap-6">
+          <nav className="my-8 flex flex-col gap-4 sm:gap-6">
             {navLinks.map((l, i) => (
               <Link
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                className="font-display text-5xl animate-fade-up text-white"
-                style={{ animationDelay: `${0.1 + i * 0.08}s` }}
+                className="font-display text-3xl sm:text-4xl text-white transition-colors hover:text-[var(--gold)]"
+                style={{ animationDelay: `${0.1 + i * 0.06}s` }}
               >
                 {l.label}
               </Link>
             ))}
-            <Link to="/wishlist" onClick={() => setOpen(false)} className="font-display text-5xl text-white animate-fade-up" style={{ animationDelay: "0.42s" }}>
+            <Link to="/wishlist" onClick={() => setOpen(false)} className="font-display text-3xl sm:text-4xl text-white transition-colors hover:text-[var(--gold)]">
               Wishlist
             </Link>
-            <Link to="/dashboard" onClick={() => setOpen(false)} className="font-display text-5xl text-white animate-fade-up" style={{ animationDelay: "0.46s" }}>
+            <Link to="/dashboard" onClick={() => setOpen(false)} className="font-display text-3xl sm:text-4xl text-white transition-colors hover:text-[var(--gold)]">
               Dashboard
             </Link>
-            <Link to="/profile" onClick={() => setOpen(false)} className="font-display text-5xl text-white animate-fade-up" style={{ animationDelay: "0.5s" }}>
+            <Link to="/profile" onClick={() => setOpen(false)} className="font-display text-3xl sm:text-4xl text-white transition-colors hover:text-[var(--gold)]">
               Profile
             </Link>
           </nav>
-          <div className="mt-auto flex items-center justify-between text-sm text-white/60">
+          <div className="mt-auto pt-6 flex items-center justify-between text-xs text-white/60 border-t border-white/10 shrink-0">
             <span>Handcrafted in small batches</span>
             <span>Coast &amp; Peak ©</span>
           </div>
@@ -152,14 +152,14 @@ export function Navbar() {
         }`}
       >
         <div className="absolute inset-0 bg-foreground/40 backdrop-blur-md" onClick={() => setSearchOpen(false)} />
-        <div className="relative mx-auto mt-32 max-w-2xl px-4">
-          <div className="glass rounded-3xl p-6 shadow-luxe">
+        <div className="relative mx-auto mt-20 sm:mt-28 md:mt-32 max-w-2xl px-4">
+          <div className="glass rounded-3xl p-5 sm:p-6 shadow-luxe">
             <div className="flex items-center gap-3 border-b border-border pb-4">
               <Search className="h-5 w-5 text-muted-foreground" />
               <input
                 autoFocus={searchOpen}
                 placeholder="Search rings, amethyst, gifts…"
-                className="flex-1 bg-transparent font-serif text-lg outline-none placeholder:text-muted-foreground"
+                className="flex-1 bg-transparent font-serif text-base sm:text-lg outline-none placeholder:text-muted-foreground"
               />
               <button onClick={() => setSearchOpen(false)} aria-label="Close search">
                 <X className="h-5 w-5" />
@@ -171,7 +171,7 @@ export function Navbar() {
                 {["Amethyst", "Stack rings", "Gifts under $200", "Limited edition", "New arrivals"].map((s) => (
                   <button
                     key={s}
-                    className="rounded-full border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                    className="rounded-full border border-border px-3 py-1.5 text-xs sm:text-sm hover:bg-secondary"
                     onClick={() => setSearchOpen(false)}
                   >
                     {s}

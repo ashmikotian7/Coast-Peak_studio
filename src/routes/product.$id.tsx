@@ -107,7 +107,7 @@ function ProductPage() {
                 </span>
               )}
             </div>
-            <h1 className="mt-3 font-display text-5xl md:text-6xl">{product.name}</h1>
+            <h1 className="mt-3 font-display text-4xl sm:text-5xl md:text-6xl">{product.name}</h1>
             <div className="mt-3 flex items-center gap-3">
               <div className="flex">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -116,8 +116,8 @@ function ProductPage() {
               </div>
               <span className="text-sm text-muted-foreground">128 reviews</span>
             </div>
-            <p className="mt-6 font-display text-4xl text-gold-gradient">${product.price}</p>
-            <p className="mt-6 font-serif text-lg leading-relaxed text-muted-foreground">{product.description}</p>
+            <p className="mt-6 font-display text-3xl sm:text-4xl text-gold-gradient">${product.price}</p>
+            <p className="mt-6 font-serif text-base sm:text-lg leading-relaxed text-muted-foreground">{product.description}</p>
 
             <div className="mt-8">
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-muted-foreground">Finish · Size</p>
@@ -153,7 +153,7 @@ function ProductPage() {
                   addToCart(product, qty);
                   toast.success("Added to cart", { description: product.name });
                 }}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-medium uppercase tracking-[0.2em] text-primary-foreground shadow-soft transition-transform duration-300 ease-luxe hover:scale-[1.02]"
+                className="inline-flex min-w-[180px] flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] text-primary-foreground shadow-soft transition-transform duration-300 ease-luxe hover:scale-[1.02]"
               >
                 <ShoppingBag className="h-4 w-4" /> Add to cart
               </button>
@@ -163,7 +163,7 @@ function ProductPage() {
                   toast(wished ? "Removed from wishlist" : "Added to wishlist");
                 }}
                 aria-label="Wishlist"
-                className={`inline-flex h-14 w-14 items-center justify-center rounded-full border border-border transition-all duration-300 ${
+                className={`inline-flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full border border-border transition-all duration-300 shrink-0 ${
                   wished ? "border-[var(--wine)] text-[var(--wine)]" : "hover:border-foreground/40"
                 }`}
               >
@@ -171,7 +171,7 @@ function ProductPage() {
               </button>
             </div>
 
-            <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-8">
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border pt-8">
               <Perk icon={Truck} label="Free shipping" sub="Worldwide · 3-5d" />
               <Perk icon={ShieldCheck} label="Lifetime care" sub="Polish & repair" />
               <Perk icon={RotateCcw} label="30-day returns" sub="No questions" />
@@ -179,7 +179,7 @@ function ProductPage() {
 
             <div className="mt-10 rounded-2xl bg-card p-5">
               <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Delivery estimate</p>
-              <p className="mt-2 font-serif text-lg">Crafted & shipped within 3 days · Arrives by your door in 5–7 days.</p>
+              <p className="mt-2 font-serif text-base sm:text-lg">Crafted & shipped within 3 days · Arrives by your door in 5–7 days.</p>
             </div>
           </div>
         </div>

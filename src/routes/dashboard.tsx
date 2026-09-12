@@ -218,61 +218,116 @@ function DashboardPage() {
 
       <section className="bg-background py-12">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
-          <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
-            <div className="grid grid-cols-[64px_1fr_120px_120px_120px_100px] items-center gap-4 border-b border-border px-5 py-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              <span></span>
-              <span>Piece</span>
-              <span>Category</span>
-              <span>Price</span>
-              <span>Stock</span>
-              <span className="text-right">Actions</span>
-            </div>
+          {/* Mobile view (< md): Cards */}
+          <div className="space-y-4 md:hidden">
             {products.length === 0 && (
-              <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
+              <div className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card px-5 py-16 text-center shadow-soft">
                 <Package className="h-8 w-8 text-muted-foreground" />
                 <p className="font-serif text-muted-foreground">No pieces in database yet. Add your first.</p>
               </div>
             )}
             {products.map((p) => (
-              <div key={p.id} className="grid grid-cols-[64px_1fr_120px_120px_120px_100px] items-center gap-4 border-b border-border px-5 py-3 last:border-0">
-                <img src={p.image} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-serif text-base">{p.name}</p>
-                    {p.sku && (
-                      <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-mono font-medium text-[var(--royal)]">
-                        {p.sku}
-                      </span>
-                    )}
+              <div key={p.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+                <div className="flex items-center gap-3.5">
+                  <img src={p.image} alt={p.name} className="h-16 w-14 rounded-xl object-cover shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-serif text-base font-medium truncate">{p.name}</p>
+                      {p.sku && (
+                        <span className="rounded bg-secondary px-1.5 py-0.5 text-[9px] font-mono font-medium text-[var(--royal)]">
+                          {p.sku}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground capitalize mt-0.5">{p.category} · Stock: {p.stock}</p>
+                    <p className="font-display text-lg text-gold-gradient mt-1">${p.price}</p>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{p.description}</p>
-                </div>
-                <span className="text-sm capitalize">{p.category}</span>
-                <span className="font-display text-lg">${p.price}</span>
-                <span className="text-sm">{p.stock}</span>
-                <div className="flex justify-end gap-2">
-                  <button onClick={() => startEdit(p)} aria-label="Edit" className="rounded-full border border-border p-2 hover:bg-secondary">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={async () => {
-                      try {
-                        await remove(p.id);
-                        toast.success("Piece deleted from database");
-                      } catch (err) {
-                        toast.error("Failed to delete piece from database", {
-                          description: (err as Error).message,
-                        });
-                      }
-                    }}
-                    aria-label="Delete"
-                    className="rounded-full border border-border p-2 text-[var(--wine)] hover:bg-secondary"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <button onClick={() => startEdit(p)} aria-label="Edit" className="rounded-full border border-border p-2 hover:bg-secondary">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await remove(p.id);
+                          toast.success("Piece deleted from database");
+                        } catch (err) {
+                          toast.error("Failed to delete piece from database", {
+                            description: (err as Error).message,
+                          });
+                        }
+                      }}
+                      aria-label="Delete"
+                      className="rounded-full border border-border p-2 text-[var(--wine)] hover:bg-secondary"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Desktop view (>= md): Full table */}
+          <div className="hidden md:block overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+            <div className="overflow-x-auto">
+              <div className="min-w-[680px]">
+                <div className="grid grid-cols-[64px_1fr_120px_120px_120px_100px] items-center gap-4 border-b border-border px-5 py-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  <span></span>
+                  <span>Piece</span>
+                  <span>Category</span>
+                  <span>Price</span>
+                  <span>Stock</span>
+                  <span className="text-right">Actions</span>
+                </div>
+                {products.length === 0 && (
+                  <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
+                    <Package className="h-8 w-8 text-muted-foreground" />
+                    <p className="font-serif text-muted-foreground">No pieces in database yet. Add your first.</p>
+                  </div>
+                )}
+                {products.map((p) => (
+                  <div key={p.id} className="grid grid-cols-[64px_1fr_120px_120px_120px_100px] items-center gap-4 border-b border-border px-5 py-3 last:border-0">
+                    <img src={p.image} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-serif text-base">{p.name}</p>
+                        {p.sku && (
+                          <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-mono font-medium text-[var(--royal)]">
+                            {p.sku}
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">{p.description}</p>
+                    </div>
+                    <span className="text-sm capitalize">{p.category}</span>
+                    <span className="font-display text-lg">${p.price}</span>
+                    <span className="text-sm">{p.stock}</span>
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => startEdit(p)} aria-label="Edit" className="rounded-full border border-border p-2 hover:bg-secondary">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await remove(p.id);
+                            toast.success("Piece deleted from database");
+                          } catch (err) {
+                            toast.error("Failed to delete piece from database", {
+                              description: (err as Error).message,
+                            });
+                          }
+                        }}
+                        aria-label="Delete"
+                        className="rounded-full border border-border p-2 text-[var(--wine)] hover:bg-secondary"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -312,7 +367,7 @@ function DashboardPage() {
             {/* Step 1: Details */}
             {step === 1 && (
               <div className="space-y-4">
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <Field
                     label="Name"
                     value={editing.name}
@@ -350,7 +405,7 @@ function DashboardPage() {
                     onChange={(v) => setEditing({ ...editing, stock: v })}
                   />
 
-                  <div className="md:col-span-2">
+                  <div className="sm:col-span-2">
                     <span className="mb-1 block text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-medium">Description</span>
                     <textarea
                       value={editing.description}

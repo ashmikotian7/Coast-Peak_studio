@@ -125,10 +125,10 @@ export function AuthShell({
       {/* Hero background — offset below the fixed header with pt-20, and
           min-h-screen (minus that offset) keeps the gradient filling the
           rest of the viewport with no white/cream gap before the footer */}
-      <div className="relative w-full min-h-screen pt-20 flex items-center justify-center overflow-hidden">
+      <div className="relative w-full min-h-screen pt-20 pb-12 flex items-center justify-center">
 
         {/* Ambient glow orbs */}
-        <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-[var(--royal)]/10 blur-[120px]" />
           <div className="absolute -bottom-32 -right-32 w-[600px] h-[600px] rounded-full bg-[var(--wine)]/10 blur-[140px]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[var(--gold)]/5 blur-[180px]" />
@@ -143,7 +143,7 @@ export function AuthShell({
         {/* Card — vertically centered within the full-height hero via
             flex items-center on the parent, with balanced top/bottom
             padding instead of a fixed pt-24/pb-0 */}
-        <div className="relative z-10 w-full max-w-[440px] mx-4 py-8">
+        <div className="relative z-10 w-full max-w-[440px] px-4 py-8">
 
           {/* Brand badge */}
           <div className="flex justify-center mb-4">
@@ -155,7 +155,7 @@ export function AuthShell({
 
           {/* Heading */}
           <div className="text-center mb-5">
-            <h1 className="font-display text-4xl md:text-5xl text-foreground mb-2 leading-tight">
+            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl text-foreground mb-2 leading-tight">
               {title}
             </h1>
             <p className="font-serif text-sm text-muted-foreground">{subtitle}</p>
@@ -163,7 +163,7 @@ export function AuthShell({
 
           {/* Glass card */}
           <div className="glass rounded-3xl border border-border shadow-luxe overflow-hidden">
-            <div className="p-6 md:p-7">
+            <div className="p-5 sm:p-7">
 
               {/* Google button */}
               {google && (
