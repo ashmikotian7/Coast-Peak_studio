@@ -110,20 +110,36 @@ export async function createCheckoutOrder(params: {
   currency?: string;
   receipt?: string;
 }): Promise<RazorpayOrderResponse> {
-  const res = await fetch("/api/create-order", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(params),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Failed to create payment order");
+  let res: Response;
+  try {
+    res = await fetch("/api/create-order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    });
+  } catch (err: unknown) {
+    throw new Error(`Could not connect to payment server: ${(err as Error)?.message || "Network error"}`);
   }
 
-  return data as RazorpayOrderResponse;
+  let data: Record<string, unknown> = {};
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    throw new Error(`Server returned non-JSON response (${res?.status || "Unknown status"})`);
+  }
+
+  if (!res.ok) {
+    const errorMsg = (data?.error as string) || (data?.message as string) || `Order creation failed (${res.status})`;
+    throw new Error(errorMsg);
+  }
+
+  if (!data?.order_id) {
+    throw new Error("Invalid order response: missing order_id from server");
+  }
+
+  return data as unknown as RazorpayOrderResponse;
 }
 
 /**
@@ -132,18 +148,30 @@ export async function createCheckoutOrder(params: {
 export async function verifyPayment(
   paymentData: RazorpaySuccessResponse
 ): Promise<{ success: boolean; message: string }> {
-  const res = await fetch("/api/verify-payment", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(paymentData),
-  });
-
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Payment verification failed");
+  let res: Response;
+  try {
+    res = await fetch("/api/verify-payment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(paymentData),
+    });
+  } catch (err: unknown) {
+    throw new Error(`Could not connect to verification server: ${(err as Error)?.message || "Network error"}`);
   }
 
-  return data;
+  let data: Record<string, unknown> = {};
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    throw new Error(`Server returned non-JSON response during verification (${res?.status || "Unknown status"})`);
+  }
+
+  if (!res.ok || !data.success) {
+    const msg = (data?.message as string) || (data?.error as string) || "Payment verification failed";
+    throw new Error(msg);
+  }
+
+  return data as unknown as { success: boolean; message: string };
 }

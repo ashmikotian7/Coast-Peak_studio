@@ -114,46 +114,51 @@ export async function processCreateOrder(
   const receipt = body.receipt || `rcpt_${Date.now()}`;
 
   try {
-    const razorpay = new Razorpay({
-      key_id: keyId,
-      key_secret: keySecret,
+    const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`;
+    const apiRes = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: Math.round(rawAmount),
+        currency,
+        receipt,
+      }),
     });
 
-    const order = await razorpay.orders.create({
-      amount: Math.round(rawAmount),
-      currency,
-      receipt,
-    });
+    const order = (await apiRes.json()) as {
+      id?: string;
+      amount?: number;
+      currency?: string;
+      error?: { description?: string; code?: string };
+      message?: string;
+    };
+
+    if (!apiRes.ok || !order.id) {
+      const errorMsg =
+        order?.error?.description || order?.message || "Razorpay rejected the order creation request";
+      return {
+        status: apiRes.status || 500,
+        data: { error: errorMsg },
+      };
+    }
 
     return {
       status: 200,
       data: {
         order_id: order.id,
-        amount: order.amount,
-        currency: order.currency,
+        amount: order.amount ?? Math.round(rawAmount),
+        currency: order.currency ?? currency,
       },
     };
   } catch (err: unknown) {
     console.error("Razorpay order creation error:", err);
-    const errorObj = err as {
-      statusCode?: number;
-      error?: { description?: string; code?: string };
-      message?: string;
-    };
-
-    if (errorObj?.statusCode === 401 || errorObj?.error?.code === "BAD_REQUEST_ERROR") {
-      return {
-        status: errorObj.statusCode || 401,
-        data: {
-          error: errorObj?.error?.description || errorObj?.message || "Razorpay authentication failed",
-        },
-      };
-    }
-
     return {
       status: 500,
       data: {
-        error: errorObj?.error?.description || errorObj?.message || "Failed to create Razorpay order",
+        error: (err as Error)?.message || "Failed to create Razorpay order",
       },
     };
   }
@@ -171,33 +176,33 @@ export async function processVerifyPayment(
   body: VerifyPaymentInput,
   env?: unknown
 ): Promise<{ status: number; data: Record<string, unknown> }> {
-  const { keySecret } = getRazorpayCredentials(env);
-
-  const orderId = body.razorpay_order_id || body.order_id;
-  const paymentId = body.razorpay_payment_id || body.payment_id;
-  const signature = body.razorpay_signature || body.signature;
-
-  if (!orderId || !paymentId || !signature) {
-    return {
-      status: 400,
-      data: {
-        success: false,
-        message: "Missing required payment fields: razorpay_order_id, razorpay_payment_id, razorpay_signature",
-      },
-    };
-  }
-
-  if (!keySecret) {
-    return {
-      status: 401,
-      data: {
-        success: false,
-        message: "Authentication failed. Razorpay key secret is not configured.",
-      },
-    };
-  }
-
   try {
+    const { keySecret } = getRazorpayCredentials(env);
+
+    const orderId = body.razorpay_order_id || body.order_id;
+    const paymentId = body.razorpay_payment_id || body.payment_id;
+    const signature = body.razorpay_signature || body.signature;
+
+    if (!orderId || !paymentId || !signature) {
+      return {
+        status: 400,
+        data: {
+          success: false,
+          message: "Missing required payment fields: razorpay_order_id, razorpay_payment_id, razorpay_signature",
+        },
+      };
+    }
+
+    if (!keySecret) {
+      return {
+        status: 401,
+        data: {
+          success: false,
+          message: "Authentication failed. Razorpay key secret is not configured.",
+        },
+      };
+    }
+
     const text = `${orderId}|${paymentId}`;
     const generatedSignature = crypto
       .createHmac("sha256", keySecret)
@@ -268,9 +273,13 @@ export async function handleCreateOrder(request: Request, env?: unknown): Promis
     });
   }
 
-  const result = await processCreateOrder(body, env);
-  return new Response(JSON.stringify(result.data), {
-    status: result.status,
+  const result = (await processCreateOrder(body, env)) || {
+    status: 500,
+    data: { error: "Unknown order processing error" },
+  };
+
+  return new Response(JSON.stringify(result.data || {}), {
+    status: typeof result.status === "number" ? result.status : 500,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }
@@ -300,9 +309,13 @@ export async function handleVerifyPayment(request: Request, env?: unknown): Prom
     });
   }
 
-  const result = await processVerifyPayment(body, env);
-  return new Response(JSON.stringify(result.data), {
-    status: result.status,
+  const result = (await processVerifyPayment(body, env)) || {
+    status: 500,
+    data: { success: false, message: "Unknown verification error" },
+  };
+
+  return new Response(JSON.stringify(result.data || {}), {
+    status: typeof result.status === "number" ? result.status : 500,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }
@@ -334,11 +347,14 @@ export function razorpayDevMiddleware(
     req.on("end", async () => {
       try {
         const body = raw ? JSON.parse(raw) : {};
-        const result = await processCreateOrder(body);
-        res.statusCode = result.status;
+        const result = (await processCreateOrder(body)) || {
+          status: 500,
+          data: { error: "Unknown order processing error" },
+        };
+        res.statusCode = typeof result.status === "number" ? result.status : 500;
         res.setHeader("Content-Type", "application/json");
         res.setHeader("Access-Control-Allow-Origin", "*");
-        res.end(JSON.stringify(result.data));
+        res.end(JSON.stringify(result.data || {}));
       } catch (err: unknown) {
         const msg = (err as Error)?.message || "Internal server error";
         res.statusCode = 500;
@@ -358,11 +374,14 @@ export function razorpayDevMiddleware(
     req.on("end", async () => {
       try {
         const body = raw ? JSON.parse(raw) : {};
-        const result = await processVerifyPayment(body);
-        res.statusCode = result.status;
+        const result = (await processVerifyPayment(body)) || {
+          status: 500,
+          data: { success: false, message: "Unknown verification error" },
+        };
+        res.statusCode = typeof result.status === "number" ? result.status : 500;
         res.setHeader("Content-Type", "application/json");
         res.setHeader("Access-Control-Allow-Origin", "*");
-        res.end(JSON.stringify(result.data));
+        res.end(JSON.stringify(result.data || {}));
       } catch (err: unknown) {
         const msg = (err as Error)?.message || "Internal server error";
         res.statusCode = 500;
@@ -376,3 +395,4 @@ export function razorpayDevMiddleware(
 
   next();
 }
+
