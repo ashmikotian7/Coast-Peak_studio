@@ -81,22 +81,31 @@ export function loadRazorpayScript(): Promise<boolean> {
       return;
     }
 
-    if (window.Razorpay) {
+    if ((window as unknown as { Razorpay?: unknown }).Razorpay) {
       resolve(true);
       return;
     }
 
     const existingScript = document.querySelector(`script[src="${RAZORPAY_SCRIPT_SRC}"]`);
     if (existingScript) {
-      existingScript.addEventListener("load", () => resolve(true));
+      if ((window as unknown as { Razorpay?: unknown }).Razorpay) {
+        resolve(true);
+        return;
+      }
+      existingScript.addEventListener("load", () =>
+        resolve(Boolean((window as unknown as { Razorpay?: unknown }).Razorpay))
+      );
       existingScript.addEventListener("error", () => resolve(false));
+      setTimeout(() => {
+        resolve(Boolean((window as unknown as { Razorpay?: unknown }).Razorpay));
+      }, 400);
       return;
     }
 
     const script = document.createElement("script");
     script.src = RAZORPAY_SCRIPT_SRC;
     script.async = true;
-    script.onload = () => resolve(true);
+    script.onload = () => resolve(Boolean((window as unknown as { Razorpay?: unknown }).Razorpay));
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });

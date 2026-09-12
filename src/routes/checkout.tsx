@@ -103,11 +103,13 @@ function CheckoutPage() {
 
       // 2. Call backend endpoint to create order (amount in paise, minimum 100)
       const amountInPaise = Math.max(100, Math.round(total * 100));
+      console.log("[Razorpay Checkout] Creating order with amount in paise:", amountInPaise);
       const orderData = await createCheckoutOrder({
         amount: amountInPaise,
         currency: "INR",
         receipt: `rcpt_${Date.now()}`,
       });
+      console.log("[Razorpay Checkout] Received order from server:", orderData);
 
       toast.dismiss(toastId);
 
@@ -221,6 +223,7 @@ function CheckoutPage() {
 
       rzp.open();
     } catch (err: unknown) {
+      console.error("[Razorpay Checkout Error Caught]:", err);
       toast.dismiss(toastId);
       setProcessing(false);
       const msg = (err as Error)?.message || "Failed to initiate payment. Please try again.";
