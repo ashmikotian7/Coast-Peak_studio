@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Plus, Pencil, Trash2, RotateCcw, X, Check, Package, Upload, ImageOff, ClipboardList } from "lucide-react";
+import { Plus, Pencil, Trash2, RotateCcw, X, Check, Package, Upload, ImageOff, ClipboardList, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { SiteLayout } from "@/components/sk/SiteLayout";
 import { useCatalog } from "@/hooks/use-catalog";
 import { saveProductToCatalog, updateProductInCatalog, type Product } from "@/lib/products";
+import { useAuth } from "@/contexts/auth-context";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -69,6 +69,7 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 function DashboardPage() {
+  const { logout } = useAuth();
   const { products, upsert, remove, reset } = useCatalog();
   const [editing, setEditing] = useState<Draft | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
@@ -171,8 +172,32 @@ function DashboardPage() {
   };
 
   return (
-    <SiteLayout>
-      <section className="bg-lavender-gradient pt-32 pb-10 md:pt-40">
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Dashboard Top Header with just Logout button */}
+      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 md:px-12">
+          <div className="flex items-center gap-3">
+            <span className="font-display text-xl tracking-tight text-foreground font-semibold">
+              Coast &amp; Peak
+            </span>
+            <span className="rounded-full bg-[var(--royal)]/10 px-2.5 py-0.5 font-serif text-[11px] uppercase tracking-wider text-[var(--royal)] font-medium">
+              Seller Dashboard
+            </span>
+          </div>
+
+          <button
+            onClick={() => logout()}
+            className="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-rose-50/70 px-4 py-2 text-xs font-medium uppercase tracking-wider text-rose-700 hover:bg-rose-100 transition-colors shadow-soft"
+            aria-label="Logout"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <section className="bg-lavender-gradient py-10 md:py-12">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
             <div>
@@ -485,7 +510,8 @@ function DashboardPage() {
           </div>
         </div>
       )}
-    </SiteLayout>
+      </main>
+    </div>
   );
 }
 

@@ -83,11 +83,6 @@ export function Navbar() {
             <IconButton aria-label="Search" onClick={() => setSearchOpen(true)} className={iconBase}>
               <Search className="h-[18px] w-[18px]" />
             </IconButton>
-            <Link to="/dashboard" className="hidden md:inline-flex" aria-label="Seller dashboard">
-              <IconButton aria-label="Seller dashboard" className={iconBase}>
-                <LayoutDashboard className="h-[18px] w-[18px]" />
-              </IconButton>
-            </Link>
             <Link to="/wishlist" className="hidden md:inline-flex">
               <IconButton aria-label="Wishlist" className={iconBase}>
                 <Heart className="h-[18px] w-[18px]" />
