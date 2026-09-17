@@ -63,6 +63,7 @@ class ProductSerializer(serializers.ModelSerializer):
     sku = serializers.CharField(required=False, allow_blank=True)
     tag = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     image = serializers.ImageField(required=False, allow_null=True)
+    image_base64 = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     stock = serializers.IntegerField(required=False, default=0)
     is_active = serializers.BooleanField(required=False, default=True)
 
@@ -77,6 +78,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'category_name',
             'category_slug',
             'image',
+            'image_base64',
             'tag',
             'description',
             'stock',
@@ -91,7 +93,6 @@ class ProductSerializer(serializers.ModelSerializer):
             clean_data = data.dict()
         elif hasattr(data, 'copy'):
             clean_data = dict(data)
-            # Flatten 1-element lists from QueryDict
             for k, v in clean_data.items():
                 if isinstance(v, list) and len(v) == 1 and k != 'images':
                     clean_data[k] = v[0]
@@ -113,7 +114,7 @@ class ProductSerializer(serializers.ModelSerializer):
             except (ValueError, TypeError):
                 pass
 
-        # Normalize Tag (handle "— None —", "none", empty strings)
+        # Normalize Tag (handle none, empty strings)
         tag_val = clean_data.get('tag')
         if isinstance(tag_val, list) and len(tag_val) > 0:
             tag_val = tag_val[0]
@@ -125,9 +126,28 @@ class ProductSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         request = self.context.get('request')
+
+        # If Cloudinary or remote storage URL (not local onrender media)
+        if instance.image:
+            try:
+                url_str = str(instance.image.url)
+                if url_str.startswith('http') and not 'onrender.com' in url_str:
+                    representation['image'] = url_str
+                    return representation
+            except Exception:
+                pass
+
+        # Prioritize the permanent PostgreSQL image_base64!
+        # This guarantees the user's uploaded image NEVER vanishes when Render restarts!
+        if instance.image_base64:
+            representation['image'] = instance.image_base64
+            return representation
+
+        # Fallback to standard Django image url
         if instance.image:
             if request:
                 representation['image'] = request.build_absolute_uri(instance.image.url)
             else:
                 representation['image'] = instance.image.url
+
         return representation
