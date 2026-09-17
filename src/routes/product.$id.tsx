@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronLeft, Heart, ShoppingBag, Truck, ShieldCheck, RotateCcw, Star } from "lucide-react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
-import { fetchProductByIdFromAPI, type Product } from "@/lib/products";
+import { fetchProductByIdFromAPI, getFallbackImage, type Product } from "@/lib/products";
 import { useCatalog } from "@/hooks/use-catalog";
 import { useStore } from "@/hooks/use-store";
 import { ProductCard } from "@/components/sk/ProductCard";
@@ -90,6 +90,13 @@ function ProductPage() {
               alt={product.name}
               width={1024}
               height={1280}
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                const fallback = getFallbackImage(product.category);
+                if (target.src !== fallback) {
+                  target.src = fallback;
+                }
+              }}
               className="aspect-[4/5] w-full object-cover transition-transform duration-[1500ms] ease-luxe group-hover:scale-110"
             />
           </div>

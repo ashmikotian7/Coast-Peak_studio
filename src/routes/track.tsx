@@ -434,6 +434,13 @@ export default function TrackPage() {
                         <img
                           src={prod.image}
                           alt={prod.name}
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            const fallback = getFallbackImage();
+                            if (target.src !== fallback) {
+                              target.src = fallback;
+                            }
+                          }}
                           className="h-4 w-4 rounded-full object-cover border border-white/40"
                         />
                       ) : (
@@ -680,6 +687,13 @@ export default function TrackPage() {
                         <img
                           src={item.image || getFallbackImage()}
                           alt={item.name}
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            const fallback = getFallbackImage();
+                            if (target.src !== fallback) {
+                              target.src = fallback;
+                            }
+                          }}
                           className="h-12 w-11 sm:h-16 sm:w-14 rounded-xl object-cover border border-border shadow-sm shrink-0"
                         />
                         <div className="flex-1 min-w-0">

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, ShoppingBag } from "lucide-react";
-import type { Product } from "@/lib/products";
+import { type Product, getFallbackImage } from "@/lib/products";
 import { useStore } from "@/hooks/use-store";
 import { toast } from "sonner";
 
@@ -44,6 +44,13 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
               loading="lazy"
               width={1024}
               height={1280}
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                const fallback = getFallbackImage(product.category);
+                if (target.src !== fallback) {
+                  target.src = fallback;
+                }
+              }}
               className="h-full w-full object-cover transition-transform duration-[1200ms] ease-luxe group-hover:scale-110"
             />
           </div>

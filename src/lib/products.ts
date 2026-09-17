@@ -107,31 +107,99 @@ export async function fetchProductByIdFromAPI(id: string): Promise<Product | nul
   }
 }
 
+async function parseResponseError(response: Response, defaultMsg = "Operation failed"): Promise<string> {
+  try {
+    const rawText = await response.text();
+    if (!rawText) return `${defaultMsg} (HTTP ${response.status})`;
+    try {
+      const errorData = JSON.parse(rawText);
+      if (errorData && typeof errorData === "object") {
+        return Object.entries(errorData)
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
+          .join("; ");
+      }
+    } catch {
+      if (rawText.includes("<title>")) {
+        const match = rawText.match(/<title>(.*?)<\/title>/i);
+        if (match) return match[1].replace(/\s+/g, " ").trim();
+      }
+      if (rawText.length < 200) return rawText;
+    }
+    return `${defaultMsg} (HTTP ${response.status})`;
+  } catch {
+    return `${defaultMsg} (HTTP ${response.status})`;
+  }
+}
+
 export async function deleteProductFromAPI(id: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/products/items/${id}/`, {
     method: "DELETE",
   });
   if (!response.ok && response.status !== 204) {
-    let errorDetail = "Failed to delete product from database";
-    try {
-      const errorData = await response.json();
-      errorDetail = JSON.stringify(errorData);
-    } catch {
-      errorDetail = await response.text();
-    }
-    throw new Error(errorDetail || `Failed to delete product ${id}`);
+    const errorDetail = await parseResponseError(response, `Failed to delete product ${id}`);
+    throw new Error(errorDetail);
   }
+}
+
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function compressImageToDataUrl(file: File, maxDim = 1200, quality = 0.85): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !file.type.startsWith("image/")) {
+      resolve(fileToDataUrl(file));
+      return;
+    }
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(fileToDataUrl(file));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      const mime = file.type === "image/png" ? "image/png" : "image/jpeg";
+      resolve(canvas.toDataURL(mime, quality));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(fileToDataUrl(file));
+    };
+    img.src = objectUrl;
+  });
 }
 
 export async function updateProductInCatalog(
   id: string,
   data: SaveProductInput,
-  imageFile?: File | null
+  imageFile?: File | null,
+  imageBase64?: string | null
 ): Promise<Product> {
   const formData = new FormData();
   if (data.name) formData.append("name", data.name);
   if (data.price !== undefined) formData.append("price", String(data.price));
-  if (data.category) formData.append("category", data.category);
+  if (data.category) formData.append("category", String(resolveCategoryId(data.category)));
   if (data.tag !== undefined) {
     const tagVal = data.tag?.trim();
     formData.append("tag", !tagVal || tagVal === "none" || tagVal === "— None —" ? "— None —" : tagVal);
@@ -141,6 +209,10 @@ export async function updateProductInCatalog(
   if (imageFile) {
     formData.append("image", imageFile);
   }
+  const resolvedBase64 = imageBase64 || (imageFile ? await compressImageToDataUrl(imageFile) : null);
+  if (resolvedBase64) {
+    formData.append("image_base64", resolvedBase64);
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/products/items/${id}/`, {
     method: "PATCH",
@@ -148,16 +220,8 @@ export async function updateProductInCatalog(
   });
 
   if (!response.ok) {
-    let errorDetail = "Failed to update product in database";
-    try {
-      const errorData = await response.json();
-      errorDetail = Object.entries(errorData)
-        .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
-        .join("; ");
-    } catch {
-      errorDetail = await response.text();
-    }
-    throw new Error(errorDetail || "Failed to update product in database");
+    const errorDetail = await parseResponseError(response, "Failed to update product in database");
+    throw new Error(errorDetail);
   }
 
   const updated = await response.json();
@@ -166,7 +230,7 @@ export async function updateProductInCatalog(
     sku: updated.sku,
     name: updated.name,
     price: Number(updated.price),
-    image: updated.image || getFallbackImage(updated.category_slug || data.category),
+    image: updated.image || resolvedBase64 || getFallbackImage(updated.category_slug || data.category),
     category: (updated.category_slug || data.category || "rings") as Product["category"],
     tag: updated.tag || undefined,
     description: updated.description || "",
@@ -185,7 +249,8 @@ export interface SaveProductInput {
 
 export async function saveProductToCatalog(
   step1Data: SaveProductInput,
-  step2ImageFile?: File | null
+  step2ImageFile?: File | null,
+  step2ImageBase64?: string | null
 ): Promise<Product> {
   const formData = new FormData();
   // Step 1 fields
@@ -204,6 +269,10 @@ export async function saveProductToCatalog(
   if (step2ImageFile) {
     formData.append("image", step2ImageFile);
   }
+  const resolvedBase64 = step2ImageBase64 || (step2ImageFile ? await compressImageToDataUrl(step2ImageFile) : null);
+  if (resolvedBase64) {
+    formData.append("image_base64", resolvedBase64);
+  }
 
   const token = getAccessToken();
   const headers: Record<string, string> = {};
@@ -218,17 +287,8 @@ export async function saveProductToCatalog(
   });
 
   if (!response.ok) {
-    let errorDetail = "Failed to add product";
-    try {
-      const errorData = await response.json();
-      console.error("Error adding product:", errorData);
-      errorDetail = Object.entries(errorData)
-        .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(", ") : val}`)
-        .join("; ");
-    } catch {
-      errorDetail = await response.text();
-    }
-    throw new Error(errorDetail || "Failed to add product");
+    const errorDetail = await parseResponseError(response, "Failed to add product");
+    throw new Error(errorDetail);
   }
 
   const newProduct = await response.json();

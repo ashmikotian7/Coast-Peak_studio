@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Plus, Pencil, Trash2, RotateCcw, X, Check, Package, Upload, ImageOff, ClipboardList, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useCatalog } from "@/hooks/use-catalog";
-import { saveProductToCatalog, updateProductInCatalog, type Product } from "@/lib/products";
+import { saveProductToCatalog, updateProductInCatalog, getFallbackImage, compressImageToDataUrl, type Product } from "@/lib/products";
 import { useAuth } from "@/contexts/auth-context";
 
 export const Route = createFileRoute("/dashboard")({
@@ -128,6 +128,7 @@ function DashboardPage() {
     setIsSaving(true);
     try {
       if (isNew) {
+        const imageBase64 = editing.image?.startsWith("data:") ? editing.image : null;
         const newProduct = await saveProductToCatalog(
           {
             name: editing.name.trim(),
@@ -137,7 +138,8 @@ function DashboardPage() {
             stock: editing.stock.trim() || 0,
             description: editing.description.trim(),
           },
-          editing.imageFile
+          editing.imageFile,
+          imageBase64
         );
         upsert(newProduct);
         toast.success(
@@ -146,6 +148,7 @@ function DashboardPage() {
             : "Piece added to catalog!"
         );
       } else {
+        const imageBase64 = editing.image?.startsWith("data:") ? editing.image : null;
         const updated = await updateProductInCatalog(
           editing.id,
           {
@@ -156,7 +159,8 @@ function DashboardPage() {
             stock: editing.stock.trim() || 0,
             description: editing.description.trim(),
           },
-          editing.imageFile
+          editing.imageFile,
+          imageBase64
         );
         upsert(updated);
         toast.success("Piece updated in database");
@@ -254,7 +258,18 @@ function DashboardPage() {
             {products.map((p) => (
               <div key={p.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
                 <div className="flex items-center gap-3.5">
-                  <img src={p.image} alt={p.name} className="h-16 w-14 rounded-xl object-cover shrink-0" />
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      const fallback = getFallbackImage(p.category);
+                      if (target.src !== fallback) {
+                        target.src = fallback;
+                      }
+                    }}
+                    className="h-16 w-14 rounded-xl object-cover shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-serif text-base font-medium truncate">{p.name}</p>
@@ -313,7 +328,18 @@ function DashboardPage() {
                 )}
                 {products.map((p) => (
                   <div key={p.id} className="grid grid-cols-[64px_1fr_120px_120px_120px_100px] items-center gap-4 border-b border-border px-5 py-3 last:border-0">
-                    <img src={p.image} alt={p.name} className="h-12 w-12 rounded-xl object-cover" />
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        const fallback = getFallbackImage(p.category);
+                        if (target.src !== fallback) {
+                          target.src = fallback;
+                        }
+                      }}
+                      className="h-12 w-12 rounded-xl object-cover"
+                    />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="truncate font-serif text-base">{p.name}</p>
@@ -611,7 +637,7 @@ function ImageUpload({
     }
 
     try {
-      const dataUrl = await fileToDataUrl(file);
+      const dataUrl = await compressImageToDataUrl(file);
       onChange(dataUrl);
       onFileChange?.(file);
     } catch {
@@ -626,7 +652,18 @@ function ImageUpload({
       {value ? (
         <div className="flex flex-col items-center gap-4 rounded-3xl border border-border bg-background/60 p-6 text-center shadow-soft">
           <div className="relative h-60 w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-secondary shadow-soft">
-            <img src={value} alt="Preview" className="h-full w-full object-cover" />
+            <img
+              src={value}
+              alt="Preview"
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                const fallback = getFallbackImage(editing?.category);
+                if (target.src !== fallback) {
+                  target.src = fallback;
+                }
+              }}
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button

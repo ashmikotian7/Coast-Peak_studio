@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { getAccessToken } from "@/lib/auth";
 import { GemstoneLoader } from "@/components/sk/Loader";
 import { toast } from "sonner";
+import { getFallbackImage } from "@/lib/products";
 import {
   createCheckoutOrder,
   verifyPayment,
@@ -416,6 +417,13 @@ function CheckoutPage() {
                         <img
                           src={i.product.image}
                           alt={i.product.name}
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            const fallback = getFallbackImage(i.product.category);
+                            if (target.src !== fallback) {
+                              target.src = fallback;
+                            }
+                          }}
                           className="h-14 w-12 rounded-xl object-cover border border-border"
                         />
                         <div>
@@ -623,7 +631,21 @@ function CheckoutPage() {
               {cart.length === 0 && <li className="text-sm text-muted-foreground">Cart is empty. <Link to="/shop" className="story-link">Browse</Link></li>}
               {cart.map((i) => (
                 <li key={i.product.id} className="flex items-center gap-3">
-                  <img src={i.product.image} alt={i.product.name} loading="lazy" width={64} height={80} className="h-16 w-14 rounded-xl object-cover" />
+                  <img
+                    src={i.product.image}
+                    alt={i.product.name}
+                    loading="lazy"
+                    width={64}
+                    height={80}
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      const fallback = getFallbackImage(i.product.category);
+                      if (target.src !== fallback) {
+                        target.src = fallback;
+                      }
+                    }}
+                    className="h-16 w-14 rounded-xl object-cover"
+                  />
                   <div className="flex-1">
                     <p className="font-serif">{i.product.name}</p>
                     <p className="text-xs text-muted-foreground">Qty {i.qty}</p>

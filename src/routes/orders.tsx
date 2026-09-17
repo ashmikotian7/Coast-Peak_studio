@@ -462,6 +462,13 @@ export default function OrdersPage() {
                               <img
                                 src={p.image || getFallbackImage()}
                                 alt={p.product_name}
+                                onError={(e) => {
+                                  const target = e.currentTarget as HTMLImageElement;
+                                  const fallback = getFallbackImage();
+                                  if (target.src !== fallback) {
+                                    target.src = fallback;
+                                  }
+                                }}
                                 className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl object-cover border border-border shrink-0"
                               />
                               <div className="flex-1 min-w-0">

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart, Minus, Plus, Trash2, ArrowRight, RotateCcw } from "lucide-react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 import { useStore } from "@/hooks/use-store";
+import { getFallbackImage } from "@/lib/products";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -92,6 +93,13 @@ function CartPage() {
                             width={120}
                             height={150}
                             loading="lazy"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              const fallback = getFallbackImage(item.product.category);
+                              if (target.src !== fallback) {
+                                target.src = fallback;
+                              }
+                            }}
                             className="h-24 w-20 rounded-2xl object-cover sm:h-32 sm:w-28"
                           />
                         </Link>
