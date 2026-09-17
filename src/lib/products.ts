@@ -208,10 +208,8 @@ export async function updateProductInCatalog(
   if (data.description !== undefined) formData.append("description", data.description);
   if (imageFile) {
     formData.append("image", imageFile);
-  }
-  const resolvedBase64 = imageBase64 || (imageFile ? await compressImageToDataUrl(imageFile) : null);
-  if (resolvedBase64) {
-    formData.append("image_base64", resolvedBase64);
+  } else if (imageBase64 && imageBase64.startsWith("data:")) {
+    formData.append("image_base64", imageBase64);
   }
 
   const response = await fetch(`${API_BASE_URL}/api/products/items/${id}/`, {
@@ -230,7 +228,7 @@ export async function updateProductInCatalog(
     sku: updated.sku,
     name: updated.name,
     price: Number(updated.price),
-    image: updated.image || resolvedBase64 || getFallbackImage(updated.category_slug || data.category),
+    image: updated.image || imageBase64 || getFallbackImage(updated.category_slug || data.category),
     category: (updated.category_slug || data.category || "rings") as Product["category"],
     tag: updated.tag || undefined,
     description: updated.description || "",
@@ -265,13 +263,11 @@ export async function saveProductToCatalog(
   formData.append("stock", String(step1Data.stock ?? 0));
   formData.append("description", step1Data.description || "");
 
-  // Step 2 image file from <input type="file"> or dropzone
+  // When a file is provided, send it directly as multipart file (avoids RequestDataTooBig)
   if (step2ImageFile) {
     formData.append("image", step2ImageFile);
-  }
-  const resolvedBase64 = step2ImageBase64 || (step2ImageFile ? await compressImageToDataUrl(step2ImageFile) : null);
-  if (resolvedBase64) {
-    formData.append("image_base64", resolvedBase64);
+  } else if (step2ImageBase64 && step2ImageBase64.startsWith("data:")) {
+    formData.append("image_base64", step2ImageBase64);
   }
 
   const token = getAccessToken();
