@@ -58,6 +58,7 @@ class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = [AllowAny]
     serializer_class = SignupSerializer
+    throttle_scope = 'auth'
     
     @extend_schema(
         summary="User Registration",
@@ -140,6 +141,7 @@ class LoginView(APIView):
     """
     
     permission_classes = [AllowAny]
+    throttle_scope = 'auth'
     
     @extend_schema(
         summary="User Login",

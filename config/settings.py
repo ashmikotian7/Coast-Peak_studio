@@ -21,7 +21,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production'
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # Allow local, render, vercel, cloudflare and custom domains
-allowed_hosts_raw = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com,coast-peak-studio.onrender.com,*')
+allowed_hosts_raw = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com,coast-peak-studio.onrender.com,coastandpeakstudio.in')
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(',') if h.strip()]
 
 
@@ -163,6 +163,16 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': os.getenv('THROTTLE_ANON_RATE', '200/minute'),
+        'user': os.getenv('THROTTLE_USER_RATE', '500/minute'),
+        'auth': os.getenv('THROTTLE_AUTH_RATE', '20/minute'),
+    },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
@@ -191,16 +201,60 @@ SIMPLE_JWT = {
 
 
 # CORS & CSRF Settings
-CORS_ALLOW_ALL_ORIGINS = True
+cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if cors_origins_env:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        'http://localhost:8081',
+        'http://127.0.0.1:8081',
+        'https://coast-peak-studio.onrender.com',
+        'https://coastandpeakstudio.in',
+        'https://www.coastandpeakstudio.in',
+    ]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.onrender\.com$",
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.pages\.dev$",
+]
+
+# Allow all origins only when explicitly enabled via env in development
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False').lower() == 'true'
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = ['*']
-CORS_ALLOW_METHODS = ['*']
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://coast-peak-studio.onrender.com',
     'https://*.onrender.com',
     'https://*.vercel.app',
     'https://*.pages.dev',
+    'https://coastandpeakstudio.in',
+    'https://www.coastandpeakstudio.in',
     'http://localhost:8080',
     'http://localhost:8081',
     'http://localhost:5173',
@@ -208,6 +262,21 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8081',
     'http://127.0.0.1:5173',
 ]
+
+# HTTP Security Headers & Production SSL Settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True').lower() == 'true'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', 31536000))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 
 # API Documentation Settings

@@ -205,12 +205,19 @@ class OrderTrackingDetailSerializer(serializers.ModelSerializer):
         return obj.status == 'cancelled'
 
     def get_user(self, obj):
+        redact = self.context.get('redact_pii', False)
+        phone = obj.phone or ''
+        street = obj.street_address or ''
+        if redact:
+            phone = f"***-***-{phone[-4:]}" if len(phone) >= 4 else "***"
+            street = "*** (Protected)"
+
         return {
             'name': f"{obj.first_name} {obj.last_name}".strip(),
-            'email': obj.email,
-            'phone': obj.phone or '',
+            'email': obj.email if not redact else (obj.email[:2] + '***@' + obj.email.split('@')[-1] if '@' in (obj.email or '') else '***'),
+            'phone': phone,
             'shipping_address': {
-                'street': obj.street_address,
+                'street': street,
                 'city': obj.city,
                 'state': obj.state,
                 'zip_code': obj.zip_code,

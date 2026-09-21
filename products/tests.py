@@ -1,13 +1,21 @@
 from decimal import Decimal
 from django.test import TestCase
+from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 from products.models import Category, Product
+
+User = get_user_model()
 
 
 class ProductTagAPITests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.admin_user = User.objects.create_superuser(
+            email='admin@example.com',
+            password='AdminPassword123!',
+            full_name='Admin User'
+        )
         self.category = Category.objects.create(name='Rings', slug='rings')
 
         self.p_new = Product.objects.create(
@@ -44,7 +52,17 @@ class ProductTagAPITests(TestCase):
         )
 
     def test_create_product_with_slug_category_and_auto_create(self):
-        # Test creating product with existing slug 'rings'
+        # 1. Unauthenticated request must be rejected with 401
+        res_unauth = self.client.post('/api/products/items/', {
+            'name': 'Golden Ring',
+            'price': '199.99',
+            'category': 'rings',
+            'stock': '10',
+        })
+        self.assertEqual(res_unauth.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # 2. Authenticated as Admin
+        self.client.force_authenticate(user=self.admin_user)
         res = self.client.post('/api/products/items/', {
             'name': 'Golden Ring',
             'price': '199.99',
@@ -58,7 +76,7 @@ class ProductTagAPITests(TestCase):
         # Test creating product with brand new slug 'bracelets' that does not exist in DB yet
         res2 = self.client.post('/api/products/items/', {
             'name': 'Velvet Bracelet',
-            'price': '.00',
+            'price': '120.00',
             'category': 'bracelets',
             'stock': '3'
         })

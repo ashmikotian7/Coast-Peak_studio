@@ -39,17 +39,43 @@ class CheckoutAPIView(views.APIView):
         order_items_to_create = []
 
         for item in cart_items:
-            product_id = item.get('product_id')
-            qty = int(item.get('quantity', 1))
-            try:
-                product = Product.objects.get(id=product_id)
-                unit_price = product.price
-                product_name = product.name
-            except (Product.DoesNotExist, ValueError):
-                unit_price = Decimal(str(item.get('price', '100.00')))
-                product_name = item.get('name', 'Jewelry Item')
-                product = None
+            product_id = item.get('product_id') or item.get('id')
+            if not product_id:
+                return Response(
+                    {'detail': 'Product ID is required for each cart item.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
+            try:
+                qty = int(item.get('quantity', 1))
+            except (ValueError, TypeError):
+                return Response(
+                    {'detail': 'Quantity must be a valid integer.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if qty <= 0:
+                return Response(
+                    {'detail': 'Quantity must be at least 1.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                product = Product.objects.get(id=product_id, is_active=True)
+            except (Product.DoesNotExist, ValueError):
+                return Response(
+                    {'detail': f"Product '{product_id}' does not exist or is inactive."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if product.stock < qty:
+                return Response(
+                    {'detail': f"Insufficient stock for '{product.name}'. Only {product.stock} available."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            unit_price = product.price
+            product_name = product.name
             item_total = unit_price * qty
             subtotal += item_total
             order_items_to_create.append({
@@ -115,29 +141,56 @@ class CheckoutAPIView(views.APIView):
                     unit_price=oi['unit_price'],
                     quantity=oi['quantity'],
                 )
+                prod = oi['product']
+                prod.stock -= oi['quantity']
+                prod.save(update_fields=['stock'])
+
+            # Clear persistent cart for authenticated user
+            if user:
+                try:
+                    from cart.models import Cart
+                    user_cart = Cart.objects.filter(user=user).first()
+                    if user_cart:
+                        user_cart.items.all().delete()
+                except Exception:
+                    pass
 
         return Response(OrderSerializer(order, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
 
 class OrderListAPIView(views.APIView):
     """
-    Returns complete list of all orders with line items, customer details, and fulfillment statuses.
-    Supports filtering by ?status=..., ?email=..., ?search=...
+    Returns list of orders with line items, customer details, and fulfillment statuses.
+    Admins/staff can view all orders with optional search and filters.
+    Authenticated customers can view only their own orders.
     """
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
-        summary="List all orders",
-        description="Retrieve all customer orders with line items, customer details, and fulfillment statuses. Supports filters by status, email, and search.",
+        summary="List customer orders",
+        description="Retrieve customer orders. Admins can view and filter all orders; customers can view only their own orders.",
         parameters=[
             OpenApiParameter(name='status', description='Filter by order status (placed, crafting, packed, shipped, delivered, cancelled)', required=False, type=str),
-            OpenApiParameter(name='email', description='Filter by customer email', required=False, type=str),
+            OpenApiParameter(name='email', description='Filter by customer email (Admin only)', required=False, type=str),
             OpenApiParameter(name='search', description='Search by order number or customer name/email', required=False, type=str),
         ],
         responses={200: OrderSerializer(many=True)}
     )
     def get(self, request):
-        queryset = Order.objects.all().prefetch_related('items__product').order_by('-created_at')
+        user = request.user
+        is_admin = bool(
+            user.is_staff or user.is_superuser or getattr(user, 'is_admin', False)
+        )
+
+        if is_admin:
+            queryset = Order.objects.all().prefetch_related('items__product').order_by('-created_at')
+            email = request.query_params.get('email', None)
+            if email:
+                queryset = queryset.filter(email__iexact=email.strip())
+        else:
+            queryset = Order.objects.filter(
+                Q(user=user) | Q(email__iexact=user.email)
+            ).prefetch_related('items__product').order_by('-created_at')
 
         status_param = request.query_params.get('status', None)
         if status_param:
@@ -154,10 +207,6 @@ class OrderListAPIView(views.APIView):
             }
             target_status = status_map.get(cleaned_status, cleaned_status)
             queryset = queryset.filter(status=target_status)
-
-        email = request.query_params.get('email', None)
-        if email:
-            queryset = queryset.filter(email__iexact=email.strip())
 
         search = request.query_params.get('search', None)
         if search:
@@ -176,7 +225,7 @@ class OrderListAPIView(views.APIView):
 class OrderDropdownListView(views.APIView):
     """
     Returns orders list formatted for dropdown selection containing user and particular products.
-    Filterable by user authentication or ?email=...
+    Scoped strictly to the authenticated user or specific verified email. Never falls back to leaking others' orders.
     """
     permission_classes = [permissions.AllowAny]
 
@@ -190,20 +239,25 @@ class OrderDropdownListView(views.APIView):
     )
     def get(self, request):
         email = request.query_params.get('email', None)
+        is_admin = bool(
+            request.user.is_authenticated and (
+                request.user.is_staff or request.user.is_superuser or getattr(request.user, 'is_admin', False)
+            )
+        )
 
-        if request.user.is_authenticated and not (request.user.is_staff or request.user.is_superuser):
+        if is_admin:
+            queryset = Order.objects.all().order_by('-created_at')
+            if email:
+                queryset = queryset.filter(email__iexact=email.strip())
+            queryset = queryset[:20]
+        elif request.user.is_authenticated:
             queryset = Order.objects.filter(
                 Q(user=request.user) | Q(email__iexact=request.user.email)
-            )
-            # If logged-in user has no orders yet, fallback to all recent orders
-            if not queryset.exists():
-                queryset = Order.objects.all().order_by('-created_at')[:20]
+            ).order_by('-created_at')[:20]
         elif email:
-            queryset = Order.objects.filter(email__iexact=email.strip())
-            if not queryset.exists():
-                queryset = Order.objects.all().order_by('-created_at')[:20]
+            queryset = Order.objects.filter(email__iexact=email.strip()).order_by('-created_at')[:20]
         else:
-            queryset = Order.objects.all().order_by('-created_at')[:20]
+            return Response([], status=status.HTTP_200_OK)
 
         queryset = queryset.prefetch_related('items__product')
         serializer = OrderDropdownSerializer(queryset, many=True, context={'request': request})
@@ -302,24 +356,51 @@ class OrderTrackingAPIView(views.APIView):
                         status=status.HTTP_404_NOT_FOUND
                     )
 
-            serializer = OrderTrackingDetailSerializer(order, context={'request': request, 'product_id': product_id})
+            # Determine whether PII (street address, phone) should be redacted
+            is_staff = request.user.is_authenticated and (
+                request.user.is_staff or request.user.is_superuser or getattr(request.user, 'is_admin', False)
+            )
+            is_owner = request.user.is_authenticated and (
+                (order.user and order.user == request.user) or 
+                (request.user.email and order.email and request.user.email.lower() == order.email.lower())
+            )
+            email_matched = bool(explicit_email and (
+                clean_email == (order.email or '').strip().lower() or
+                (order.user and order.user.email and clean_email == order.user.email.strip().lower())
+            ))
+            redact_pii = not (is_staff or is_owner or email_matched)
+
+            serializer = OrderTrackingDetailSerializer(
+                order,
+                context={'request': request, 'product_id': product_id, 'redact_pii': redact_pii}
+            )
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         # Case 2: User Email, Product ID, or Authenticated User
         if email or product_id or request.user.is_authenticated:
             orders_qs = Order.objects.all().prefetch_related('items__product').order_by('-created_at')
 
-            # If staff/admin is logged in, allow them to view all orders
-            is_staff = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
+            is_staff = request.user.is_authenticated and (
+                request.user.is_staff or request.user.is_superuser or getattr(request.user, 'is_admin', False)
+            )
 
-            if email and not is_staff:
-                user_match = orders_qs.filter(
+            if is_staff:
+                if email:
+                    orders_qs = orders_qs.filter(
+                        Q(email__iexact=email.strip()) | 
+                        Q(user__email__iexact=email.strip())
+                    )
+            elif request.user.is_authenticated:
+                orders_qs = orders_qs.filter(
+                    Q(user=request.user) | Q(email__iexact=request.user.email)
+                )
+            elif email:
+                orders_qs = orders_qs.filter(
                     Q(email__iexact=email.strip()) | 
                     Q(user__email__iexact=email.strip())
                 )
-                # If user has their own orders, show them; otherwise fallback to latest orders for preview
-                if user_match.exists():
-                    orders_qs = user_match
+            else:
+                orders_qs = orders_qs.none()
 
             # Safe product_id filtering for PostgreSQL
             if product_id:
@@ -339,14 +420,21 @@ class OrderTrackingAPIView(views.APIView):
                         status=status.HTTP_404_NOT_FOUND
                     )
 
-            # If still no orders found for user, fallback to recent orders for demo/testing
             if not orders_qs.exists():
-                orders_qs = Order.objects.all().prefetch_related('items__product').order_by('-created_at')[:10]
+                return Response(
+                    {
+                        'count': 0,
+                        'detail': 'No orders found matching the criteria.',
+                        'is_found': False,
+                        'orders': []
+                    },
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
             serializer = OrderTrackingDetailSerializer(
                 orders_qs, 
                 many=True, 
-                context={'request': request, 'product_id': product_id}
+                context={'request': request, 'product_id': product_id, 'redact_pii': not is_staff}
             )
             return Response(
                 {
@@ -371,17 +459,18 @@ class OrderTrackingAPIView(views.APIView):
 class OrderStatusUpdateAPIView(views.APIView):
     """
     Updates the fulfillment/tracking status of an order.
-    Accepts: placed, preparing (crafting), packed, dispatched (shipped), delivered, cancelled.
+    Requires Administrator / Staff permissions.
     """
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
         summary="Update order tracking status",
-        description="Change order status (e.g. to 'dispatched', 'preparing', 'delivered'). Returns updated live tracking timeline.",
+        description="Change order status (e.g. to 'dispatched', 'preparing', 'delivered'). Requires Admin privileges.",
         request=OrderStatusUpdateSerializer,
         responses={
             200: OrderTrackingDetailSerializer,
             400: OpenApiResponse(description="Invalid status"),
+            403: OpenApiResponse(description="Forbidden - Admin required"),
             404: OpenApiResponse(description="Order not found"),
         }
     )
@@ -392,6 +481,17 @@ class OrderStatusUpdateAPIView(views.APIView):
         return self._handle_update(request, order_number)
 
     def _handle_update(self, request, order_number=None):
+        is_admin = bool(
+            request.user.is_staff or 
+            request.user.is_superuser or 
+            getattr(request.user, 'is_admin', False)
+        )
+        if not is_admin:
+            return Response(
+                {'detail': 'Administrator privileges are required to modify order status.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         num = order_number or request.data.get('order_number') or request.query_params.get('number')
         if not num:
             return Response(

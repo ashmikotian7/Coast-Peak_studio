@@ -18,6 +18,11 @@ class OrderTrackingAPITests(TestCase):
             password='Password123!',
             full_name='Alice Smith'
         )
+        self.admin_user = User.objects.create_superuser(
+            email='admin@example.com',
+            password='AdminPassword123!',
+            full_name='Admin User'
+        )
 
         self.category = Category.objects.create(name='Rings', slug='rings')
         self.product = Product.objects.create(
@@ -133,7 +138,17 @@ class OrderTrackingAPITests(TestCase):
         self.assertFalse(res.data['is_found'])
 
     def test_order_status_update(self):
-        # Update status to delivered
+        # 1. Unauthenticated attempt must be rejected with 401
+        res_unauth = self.client.patch(f'/api/orders/track/{self.order.order_number}/status/', {'status': 'delivered'})
+        self.assertEqual(res_unauth.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # 2. Authenticated non-staff customer must be rejected with 403
+        self.client.force_authenticate(user=self.user)
+        res_cust = self.client.patch(f'/api/orders/track/{self.order.order_number}/status/', {'status': 'delivered'})
+        self.assertEqual(res_cust.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3. Authenticated Admin must succeed
+        self.client.force_authenticate(user=self.admin_user)
         res = self.client.patch(f'/api/orders/track/{self.order.order_number}/status/', {'status': 'delivered'})
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['current_status'], 'delivered')
@@ -151,11 +166,25 @@ class OrderTrackingAPITests(TestCase):
         self.assertEqual(res2.data['current_status_display'], 'Preparing Order')
 
     def test_order_status_update_invalid(self):
+        self.client.force_authenticate(user=self.admin_user)
         res = self.client.patch(f'/api/orders/track/{self.order.order_number}/status/', {'status': 'flying'})
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('status', res.data)
 
     def test_all_orders_list_api(self):
+        # 1. Unauthenticated request must be rejected with 401
+        res_unauth = self.client.get('/api/orders/')
+        self.assertEqual(res_unauth.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # 2. Authenticated customer sees only their orders
+        self.client.force_authenticate(user=self.user)
+        res_user = self.client.get('/api/orders/')
+        self.assertEqual(res_user.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_user.data), 1)
+        self.assertEqual(res_user.data[0]['order_number'], 'CP-2026-1025')
+
+        # 3. Authenticated Admin sees all orders
+        self.client.force_authenticate(user=self.admin_user)
         res = self.client.get('/api/orders/')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
@@ -281,4 +310,50 @@ class OrderTrackingAPITests(TestCase):
         self.assertEqual(bob.state, 'TX')
         self.assertEqual(bob.zip_code, '78701')
         self.assertEqual(bob.phone_number, '+1 555-4321')
+
+    def test_checkout_rejects_negative_or_zero_quantity(self):
+        res_zero = self.client.post('/api/orders/checkout/', {
+            'email': 'customer@example.com',
+            'cart_items': [{'product_id': self.product.id, 'quantity': 0}]
+        }, format='json')
+        self.assertEqual(res_zero.status_code, status.HTTP_400_BAD_REQUEST)
+
+        res_neg = self.client.post('/api/orders/checkout/', {
+            'email': 'customer@example.com',
+            'cart_items': [{'product_id': self.product.id, 'quantity': -5}]
+        }, format='json')
+        self.assertEqual(res_neg.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_checkout_rejects_invalid_or_inactive_product(self):
+        res_invalid = self.client.post('/api/orders/checkout/', {
+            'email': 'customer@example.com',
+            'cart_items': [{'product_id': 99999, 'quantity': 1}]
+        }, format='json')
+        self.assertEqual(res_invalid.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_checkout_stock_validation_and_decrement(self):
+        initial_stock = self.product.stock
+        # Attempt to checkout more than available stock (stock is 10, request 15)
+        res_overflow = self.client.post('/api/orders/checkout/', {
+            'email': 'customer@example.com',
+            'cart_items': [{'product_id': self.product.id, 'quantity': initial_stock + 5}]
+        }, format='json')
+        self.assertEqual(res_overflow.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Successful checkout decrements stock
+        res_ok = self.client.post('/api/orders/checkout/', {
+            'email': 'customer@example.com',
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'cart_items': [{'product_id': self.product.id, 'quantity': 2}]
+        }, format='json')
+        self.assertEqual(res_ok.status_code, status.HTTP_201_CREATED)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, initial_stock - 2)
+
+    def test_order_dropdown_does_not_leak_orders(self):
+        # Unauthenticated request without email must return empty list []
+        res = self.client.get('/api/orders/dropdown/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 0)
 

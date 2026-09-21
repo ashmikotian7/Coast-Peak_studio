@@ -2,10 +2,64 @@
 Serializers for authentication API.
 """
 
+import os
+import json
+import logging
+import urllib.request
+import urllib.error
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.password_validation import validate_password
 from .models import User
+
+logger = logging.getLogger(__name__)
+
+
+def verify_google_id_token(token: str, expected_email: str) -> bool:
+    """
+    Verifies a Google OAuth2 / OpenID Connect ID token by querying
+    Google's tokeninfo endpoint. Ensures the email matches and is verified.
+    """
+    if not token or not token.strip():
+        return False
+    try:
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={token.strip()}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'CoastPeakStudioBackend/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status != 200:
+                return False
+            payload = json.loads(resp.read().decode('utf-8'))
+            token_email = payload.get('email', '').strip().lower()
+            email_verified = payload.get('email_verified') in [True, 'true', '1']
+            return bool(email_verified and token_email == expected_email.strip().lower())
+    except Exception as exc:
+        logger.warning(f"Google token verification error: {exc}")
+        return False
+
+
+def validate_google_credentials(token: str, email: str):
+    """
+    Validates Google token or checks development bypass if configured.
+    """
+    allow_dev_bypass = settings.DEBUG and os.getenv('ALLOW_DEV_GOOGLE_BYPASS', 'False').lower() == 'true'
+
+    if not token:
+        if allow_dev_bypass:
+            return True
+        raise serializers.ValidationError({
+            'google_token': 'Google ID token or credential is required for Google authentication.'
+        })
+
+    is_valid = verify_google_id_token(token, email)
+    if not is_valid:
+        if allow_dev_bypass and token.startswith('dev-'):
+            return True
+        raise serializers.ValidationError({
+            'google_token': 'Invalid, expired, or unverified Google token.'
+        })
+    return True
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -41,11 +95,22 @@ class SignupSerializer(serializers.ModelSerializer):
         required=False,
         style={'input_type': 'password'}
     )
+    google_token = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True
+    )
     
     class Meta:
         model = User
-        fields = ['signup_type', 'full_name', 'email', 'password', 'password_confirm', 'phone_number', 'country', 'street_address', 'city', 'state', 'zip_code']
+        fields = ['signup_type', 'full_name', 'email', 'password', 'password_confirm', 'phone_number', 'country', 'street_address', 'city', 'state', 'zip_code', 'google_token']
     
+    def to_internal_value(self, data):
+        mutable = data.copy() if hasattr(data, 'copy') else dict(data)
+        if not mutable.get('google_token'):
+            mutable['google_token'] = mutable.get('id_token') or mutable.get('credential') or ''
+        return super().to_internal_value(mutable)
+
     def validate(self, attrs):
         """
         Validate based on signup_type.
@@ -75,12 +140,13 @@ class SignupSerializer(serializers.ModelSerializer):
                 })
         
         elif signup_type == 'google':
-            # Google signup only requires email
-            # Password fields should not be present
+            # Google signup requires email and verified Google token
             if 'password' in attrs or 'password_confirm' in attrs:
                 raise serializers.ValidationError({
                     'password': 'Password should not be provided for Google signup.'
                 })
+            google_token = attrs.get('google_token', '')
+            validate_google_credentials(google_token, email)
         
         return attrs
     
@@ -90,6 +156,9 @@ class SignupSerializer(serializers.ModelSerializer):
         """
         signup_type = validated_data.pop('signup_type')
         
+        if 'google_token' in validated_data:
+            validated_data.pop('google_token')
+
         if signup_type == 'direct':
             validated_data.pop('password_confirm')
             password = validated_data.pop('password')
@@ -130,6 +199,17 @@ class LoginSerializer(serializers.Serializer):
         write_only=True,
         style={'input_type': 'password'}
     )
+    google_token = serializers.CharField(
+        required=False,
+        write_only=True,
+        allow_blank=True
+    )
+
+    def to_internal_value(self, data):
+        mutable = data.copy() if hasattr(data, 'copy') else dict(data)
+        if not mutable.get('google_token'):
+            mutable['google_token'] = mutable.get('id_token') or mutable.get('credential') or ''
+        return super().to_internal_value(mutable)
     
     def validate(self, attrs):
         """
@@ -166,12 +246,13 @@ class LoginSerializer(serializers.Serializer):
                 })
         
         elif login_type == 'google':
-            # Google login doesn't require password
             # Check if user signed up with Google
             if user.auth_provider != 'google':
                 raise serializers.ValidationError({
                     'login_type': 'This account was created with direct signup. Please use direct login.'
                 })
+            google_token = attrs.get('google_token', '')
+            validate_google_credentials(google_token, email)
         
         attrs['user'] = user
         return attrs

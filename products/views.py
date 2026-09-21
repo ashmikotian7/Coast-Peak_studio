@@ -20,20 +20,33 @@ def normalize_tag(tag: str) -> str:
     return tag.strip().lower()
 
 
+from .permissions import IsAdminOrReadOnly
+
+
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdminOrReadOnly]
 
 
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.filter(is_active=True).order_by('-created_at')
+    queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdminOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        user = self.request.user
+        is_admin = bool(
+            user and user.is_authenticated and (
+                user.is_staff or user.is_superuser or getattr(user, 'is_admin', False)
+            )
+        )
+        if is_admin:
+            queryset = Product.objects.all().order_by('-created_at')
+        else:
+            queryset = Product.objects.filter(is_active=True).order_by('-created_at')
+
         category = self.request.query_params.get('category', None)
         if category:
             queryset = queryset.filter(category__slug=category)
