@@ -15,7 +15,7 @@ import { useState, useEffect } from "react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 import { useStore, type CartItem } from "@/hooks/use-store";
 import { useAuth } from "@/contexts/auth-context";
-import { getAccessToken } from "@/lib/auth";
+import { getAccessToken, authenticatedFetch } from "@/lib/auth";
 import { GemstoneLoader } from "@/components/sk/Loader";
 import { toast } from "sonner";
 import { getFallbackImage } from "@/lib/products";
@@ -24,6 +24,39 @@ import {
   verifyPayment,
   loadRazorpayScript,
 } from "@/lib/razorpay";
+
+async function parseCheckoutErrorMessage(res: Response): Promise<string> {
+  try {
+    const data = await res.json();
+    if (typeof data === "string") return data;
+    if (data.detail) {
+      return Array.isArray(data.detail) ? data.detail.join(" ") : String(data.detail);
+    }
+    if (data.error) {
+      return Array.isArray(data.error) ? data.error.join(" ") : String(data.error);
+    }
+    if (data.message) {
+      return Array.isArray(data.message) ? data.message.join(" ") : String(data.message);
+    }
+    if (data.non_field_errors) {
+      return Array.isArray(data.non_field_errors)
+        ? data.non_field_errors.join(" ")
+        : String(data.non_field_errors);
+    }
+    if (typeof data === "object" && data !== null) {
+      return Object.entries(data)
+        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+        .join("; ");
+    }
+    return `Order validation failed (Status ${res.status})`;
+  } catch {
+    try {
+      const text = await res.text();
+      if (text && text.length < 200) return text;
+    } catch {}
+    return `Order validation failed (Status ${res.status})`;
+  }
+}
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — Coast & Peak Studio" }] }),
@@ -94,6 +127,23 @@ function CheckoutPage() {
 
   const next = (e: React.FormEvent) => {
     e.preventDefault();
+    if (cart.length === 0) {
+      toast.error("Your cart is empty. Please select an heirloom piece before checking out.");
+      return;
+    }
+    if (step === 0) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(data.email.trim())) {
+        toast.error("Please enter a valid email address.");
+        return;
+      }
+    }
+    if (step === 1) {
+      if (!data.firstName.trim() || !data.street.trim() || !data.city.trim() || !data.zip.trim()) {
+        toast.error("Please fill in all required shipping address fields.");
+        return;
+      }
+    }
     if (step < 2) {
       setStep((s) => (s + 1) as Step);
     } else {
@@ -112,6 +162,11 @@ function CheckoutPage() {
    * 3. On success, call POST /api/verify-payment with razorpay_order_id, razorpay_payment_id, razorpay_signature
    */
   const handleRazorpayPayment = async () => {
+    if (cart.length === 0 || total <= 0) {
+      toast.error("Cart is empty", { description: "Cannot proceed to payment without items in cart." });
+      return;
+    }
+
     setProcessing(true);
     const toastId = toast.loading("Connecting to Razorpay Secure Gateway…");
 
@@ -140,7 +195,15 @@ function CheckoutPage() {
       toast.dismiss(toastId);
 
       const razorpayKeyId =
-        import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_Tb5k5uSyScd9xr";
+        import.meta.env.VITE_RAZORPAY_KEY_ID || "";
+
+      if (!razorpayKeyId) {
+        toast.error("Payment Configuration Error", {
+          description: "Razorpay Public Key is not configured on the client.",
+        });
+        setProcessing(false);
+        return;
+      }
 
       // 3. Configure Razorpay modal options
       const options = {
@@ -152,9 +215,9 @@ function CheckoutPage() {
         image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=200&q=80",
         order_id: orderData.order_id,
         prefill: {
-          name: `${data.firstName} ${data.lastName}`.trim(),
-          email: data.email,
-          contact: data.phone,
+          name: `${data.firstName.trim()} ${data.lastName.trim()}`.trim(),
+          email: data.email.trim(),
+          contact: data.phone.trim(),
         },
         theme: {
           color: "#4a154b", // deep royal/wine boutique color
@@ -190,16 +253,13 @@ function CheckoutPage() {
               // 5. Submit confirmed order to backend
               try {
                 const apiBase = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
-                const headers: Record<string, string> = { "Content-Type": "application/json" };
-                const token = getAccessToken();
-                if (token) headers["Authorization"] = `Bearer ${token}`;
 
                 // Map Razorpay payment to 'card' so Django database accepts and persists the order
                 const dbPaymentMethod = data.method === "cod" ? "cod" : "card";
 
-                const orderBackendRes = await fetch(`${apiBase}/api/orders/checkout/`, {
+                const orderBackendRes = await authenticatedFetch(`${apiBase}/api/orders/checkout/`, {
                   method: "POST",
-                  headers,
+                  headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     email: data.email?.trim(),
                     phone: data.phone?.trim() || "",
@@ -221,18 +281,25 @@ function CheckoutPage() {
                   }),
                 });
 
-                if (orderBackendRes.ok) {
-                  const backendOrderData = await orderBackendRes.json();
-                  console.log("[Checkout] Successfully saved order to database:", backendOrderData);
-                  if (backendOrderData?.order_number) {
-                    orderNumber = backendOrderData.order_number;
-                  }
-                } else {
-                  const errText = await orderBackendRes.text();
-                  console.error("[Checkout] Failed to save order to database:", orderBackendRes.status, errText);
+                if (!orderBackendRes.ok) {
+                  const errorMsg = await parseCheckoutErrorMessage(orderBackendRes);
+                  toast.error("Inventory / Order Error", {
+                    description: `${errorMsg}. Please contact support with payment ID ${response.razorpay_payment_id} or adjust your cart.`,
+                  });
+                  return;
+                }
+
+                const backendOrderData = await orderBackendRes.json();
+                console.log("[Checkout] Successfully saved order to database:", backendOrderData);
+                if (backendOrderData?.order_number) {
+                  orderNumber = backendOrderData.order_number;
                 }
               } catch (syncErr) {
                 console.error("[Checkout] Error syncing order to database:", syncErr);
+                toast.error("Order Sync Error", {
+                  description: "Could not save your order details. Please contact customer care.",
+                });
+                return;
               }
 
               // 6. Record confirmed order for instant tracking
@@ -301,21 +368,21 @@ function CheckoutPage() {
    * Cash on Delivery fallback handler
    */
   const handleCodPayment = async () => {
+    if (cart.length === 0 || total <= 0) {
+      toast.error("Cart is empty", { description: "Cannot proceed to payment without items in cart." });
+      return;
+    }
+
     setProcessing(true);
     let orderNumber = `CP-${Date.now().toString().slice(-6)}`;
     const orderedItems = [...cart];
 
     try {
       const apiBase = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      const token = getAccessToken();
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
 
-      const res = await fetch(`${apiBase}/api/orders/checkout/`, {
+      const res = await authenticatedFetch(`${apiBase}/api/orders/checkout/`, {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: data.email?.trim(),
           phone: data.phone?.trim() || "",
@@ -335,19 +402,21 @@ function CheckoutPage() {
         }),
       });
 
-      if (res.ok) {
-        const order = await res.json();
-        console.log("[Checkout COD] Successfully saved order to database:", order);
-        if (order?.order_number) {
-          orderNumber = order.order_number;
-        }
-      } else {
-        const errText = await res.text();
-        console.error("[Checkout COD] Failed to save order to database:", res.status, errText);
+      if (!res.ok) {
+        const errorMsg = await parseCheckoutErrorMessage(res);
+        toast.error("Inventory / Order Error", {
+          description: `${errorMsg}. Please adjust your cart quantities.`,
+        });
+        setProcessing(false);
+        return;
       }
-    } catch (err) {
-      console.error("[Checkout COD] Error saving order to database:", err);
-    } finally {
+
+      const order = await res.json();
+      console.log("[Checkout COD] Successfully saved order to database:", order);
+      if (order?.order_number) {
+        orderNumber = order.order_number;
+      }
+
       const orderRecord: ConfirmedOrderDetails = {
         orderNumber,
         total,
@@ -371,6 +440,12 @@ function CheckoutPage() {
       toast.success("Order Placed Successfully!", {
         description: `Order #${orderNumber} is confirmed.`,
       });
+    } catch (err: unknown) {
+      console.error("[Checkout COD] Error saving order to database:", err);
+      toast.error("Checkout Failed", {
+        description: (err as Error)?.message || "Could not process order. Please try again.",
+      });
+      setProcessing(false);
     }
   };
 
@@ -609,7 +684,7 @@ function CheckoutPage() {
               )}
               <button
                 type="submit"
-                disabled={processing || (step < 2 && cart.length === 0)}
+                disabled={processing || cart.length === 0}
                 className="flex flex-1 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] py-4 text-sm uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform duration-300 ease-luxe hover:scale-[1.01] disabled:opacity-60 order-1 sm:order-2 cursor-pointer"
               >
                 {processing ? (

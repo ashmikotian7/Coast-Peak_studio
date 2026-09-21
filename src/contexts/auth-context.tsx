@@ -8,9 +8,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (email: string, fullName: string) => Promise<void>;
+  loginWithGoogle: (email: string, fullName?: string, googleToken?: string) => Promise<void>;
   signup: (fullName: string, email: string, password: string, passwordConfirm: string, phoneNumber: string, country: string) => Promise<void>;
-  signupWithGoogle: (fullName: string, email: string) => Promise<void>;
+  signupWithGoogle: (fullName: string, email: string, googleToken?: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<User>;
   logout: () => void;
 }
@@ -83,10 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate({ to: "/profile" });
   };
 
-  const handleLoginWithGoogle = async (email: string, fullName: string) => {
+  const handleLoginWithGoogle = async (email: string, fullName?: string, googleToken?: string) => {
     const response = await login({
       login_type: "google",
       email,
+      google_token: googleToken,
+      credential: googleToken,
+      id_token: googleToken,
     });
 
     setAuthTokens(response.access, response.refresh);
@@ -131,11 +134,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate({ to: "/profile" });
   };
 
-  const handleSignupWithGoogle = async (fullName: string, email: string) => {
+  const handleSignupWithGoogle = async (fullName: string, email: string, googleToken?: string) => {
     const response = await signup({
       signup_type: "google",
       full_name: fullName,
       email,
+      google_token: googleToken,
+      credential: googleToken,
+      id_token: googleToken,
     });
 
     setAuthTokens(response.access, response.refresh);

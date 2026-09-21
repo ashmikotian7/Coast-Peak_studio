@@ -69,25 +69,43 @@ async function normalizeCatastrophicSsrResponse(response: Response | undefined |
 
 import { handleCreateOrder, handleVerifyPayment } from "./server/razorpay";
 
+function applySecurityHeaders(res: Response): Response {
+  const newHeaders = new Headers(res.headers);
+  newHeaders.set("X-Frame-Options", "SAMEORIGIN");
+  newHeaders.set("X-Content-Type-Options", "nosniff");
+  newHeaders.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  newHeaders.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  newHeaders.set("X-XSS-Protection", "1; mode=block");
+
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: newHeaders,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
 
       if (url.pathname === "/api/create-order") {
-        return await handleCreateOrder(request, env);
+        const res = await handleCreateOrder(request, env);
+        return applySecurityHeaders(res);
       }
 
       if (url.pathname === "/api/verify-payment") {
-        return await handleVerifyPayment(request, env);
+        const res = await handleVerifyPayment(request, env);
+        return applySecurityHeaders(res);
       }
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      return applySecurityHeaders(normalized);
     } catch (error) {
       console.error(error);
-      return brandedErrorResponse();
+      return applySecurityHeaders(brandedErrorResponse());
     }
   },
 };

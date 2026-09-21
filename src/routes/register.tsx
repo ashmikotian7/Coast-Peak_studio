@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AuthShell } from "./login";
 import { useAuth } from "@/contexts/auth-context";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Create account — Coast & Peak Studio" }] }),
@@ -20,18 +21,52 @@ function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const cleanName = fullName.trim();
+    const cleanEmail = email.trim();
+    const cleanPhone = phoneNumber.trim();
+
+    if (!cleanName) {
+      toast.error("Full name required", { description: "Please enter your full name." });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      toast.error("Invalid email", { description: "Please provide a valid email address." });
+      return;
+    }
+
+    if (password.length < 8) {
+      toast.error("Password too short", { description: "Password must be at least 8 characters long for security." });
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      toast.error("Passwords do not match", { description: "Please ensure password confirmation matches." });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await signup(fullName, email, password, passwordConfirm, phoneNumber, country);
+      await signup(cleanName, cleanEmail, password, passwordConfirm, cleanPhone, country);
+    } catch (err: unknown) {
+      toast.error("Registration failed", {
+        description: (err as Error)?.message || "Could not complete account registration.",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignup = async (email: string, fullName: string) => {
+  const handleGoogleSignup = async (email: string, fullName: string, googleToken?: string) => {
     setIsLoading(true);
     try {
-      await signupWithGoogle(fullName, email);
+      await signupWithGoogle(fullName, email, googleToken);
+    } catch (err: unknown) {
+      toast.error("Google signup failed", {
+        description: (err as Error)?.message || "Could not complete account registration.",
+      });
     } finally {
       setIsLoading(false);
     }

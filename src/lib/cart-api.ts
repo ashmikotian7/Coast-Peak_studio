@@ -1,4 +1,4 @@
-import { getAccessToken } from "./auth";
+import { getAccessToken, authenticatedFetch } from "./auth";
 import { getFallbackImage, type Product } from "./products";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
@@ -56,11 +56,10 @@ async function cartFetch<T>(endpoint: string, options: RequestInit = {}): Promis
     throw new Error("User is not authenticated");
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });

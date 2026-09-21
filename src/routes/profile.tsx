@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { User as UserIcon, Package, Heart, MapPin, LogOut, Pencil, Check, X, Lock, ArrowRight, Shield, Mail, Phone, UserCheck, Truck, ShoppingBag, ChevronRight, RotateCcw } from "lucide-react";
+import { User as UserIcon, Package, Heart, MapPin, LogOut, Pencil, Check, X, Lock, ArrowRight, Shield, Mail, Phone, UserCheck, Truck, ShoppingBag, ChevronRight, RotateCcw, LayoutDashboard, ClipboardList } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 import { useAuth } from "@/contexts/auth-context";
@@ -528,6 +528,12 @@ export default function ProfilePage() {
           <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 mt-2">
             <Card icon={Package} title="Order History" subtitle="Track active & past shipments" to="/track" />
             <Card icon={Heart} title="Wishlist" subtitle="Saved luxury pieces" to="/wishlist" />
+            {user.is_admin && (
+              <>
+                <Card icon={ClipboardList} title="Order Registry" subtitle="Manage and fulfill customer orders" to="/orders" />
+                <Card icon={LayoutDashboard} title="Seller Dashboard" subtitle="Manage pieces, inventory & catalog" to="/dashboard" />
+              </>
+            )}
           </div>
         </div>
       </section>

@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { useStore } from "@/hooks/use-store";
+import { useAuth } from "@/contexts/auth-context";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -26,6 +27,7 @@ const navLinks = [
 ] as const;
 
 export function Navbar() {
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -277,21 +279,23 @@ export function Navbar() {
                   <ChevronRight className="h-3.5 w-3.5 text-white/30" />
                 </Link>
 
-                <Link
-                  to="/dashboard"
-                  onClick={() => setOpen(false)}
-                  className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
-                    pathname === "/dashboard"
-                      ? "bg-white/15 text-[var(--gold)] font-semibold"
-                      : "text-white/85 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <LayoutDashboard className="h-4 w-4 text-white/50 group-hover:text-white/90" />
-                    <span>Seller Dashboard</span>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-white/30" />
-                </Link>
+                {user?.is_admin && (
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setOpen(false)}
+                    className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+                      pathname === "/dashboard"
+                        ? "bg-white/15 text-[var(--gold)] font-semibold"
+                        : "text-white/85 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <LayoutDashboard className="h-4 w-4 text-white/50 group-hover:text-white/90" />
+                      <span>Seller Dashboard</span>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-white/30" />
+                  </Link>
+                )}
               </nav>
             </div>
           </div>

@@ -10,9 +10,13 @@ import {
   DollarSign,
   User,
   ShoppingBag,
+  Lock,
+  ShieldAlert,
+  ArrowRight,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
+import { useAuth } from "@/contexts/auth-context";
 import {
   fetchAllOrdersAPI,
   updateOrderStatusAPI,
@@ -94,6 +98,7 @@ function normalizeStage(rawStatus: string): "placed" | "preparing" | "dispatched
 }
 
 export default function OrdersPage() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,6 +106,10 @@ export default function OrdersPage() {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   const loadOrders = async () => {
+    if (!isAuthenticated || !user?.is_admin) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await fetchAllOrdersAPI();
@@ -113,8 +122,12 @@ export default function OrdersPage() {
   };
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    if (!authLoading && isAuthenticated && user?.is_admin) {
+      loadOrders();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [authLoading, isAuthenticated, user]);
 
   const handleStatusChange = async (orderNumber: string, newStatus: string) => {
     setUpdatingOrderId(orderNumber);
@@ -197,6 +210,92 @@ export default function OrdersPage() {
       return true;
     });
   }, [orders, statusFilter, searchQuery]);
+
+  if (authLoading) {
+    return (
+      <SiteLayout>
+        <div className="fixed inset-0 -z-10 bg-lavender-gradient" />
+        <div className="flex min-h-[70vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Package className="h-8 w-8 text-[var(--royal)] animate-pulse" />
+            <p className="font-serif text-sm text-muted-foreground">Verifying security clearance…</p>
+          </div>
+        </div>
+      </SiteLayout>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <SiteLayout>
+        <div className="fixed inset-0 -z-10 bg-lavender-gradient" />
+        <section className="min-h-screen pt-32 pb-12 md:pt-40">
+          <div className="mx-auto max-w-4xl px-6 text-center md:px-12">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-card border border-border text-[var(--royal)] shadow-soft depth-3d">
+              <Lock className="h-9 w-9" />
+            </div>
+            <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--royal)]">
+              Atelier Authorization Required
+            </p>
+            <h1 className="mt-3 font-display text-4xl md:text-5xl">Sign in to access Order Registry</h1>
+            <p className="mt-4 font-serif text-lg text-muted-foreground max-w-xl mx-auto">
+              Customer order ledgers, fulfillment data, and shipping records are protected. Please sign in with your atelier administrative account.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/login"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform hover:scale-105"
+              >
+                Sign In <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full border border-border bg-card px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-foreground shadow-soft depth-3d hover:bg-secondary"
+              >
+                Return to Atelier
+              </Link>
+            </div>
+          </div>
+        </section>
+      </SiteLayout>
+    );
+  }
+
+  if (!user.is_admin) {
+    return (
+      <SiteLayout>
+        <div className="fixed inset-0 -z-10 bg-lavender-gradient" />
+        <section className="min-h-screen pt-32 pb-12 md:pt-40">
+          <div className="mx-auto max-w-4xl px-6 text-center md:px-12">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-600 shadow-soft depth-3d">
+              <ShieldAlert className="h-9 w-9" />
+            </div>
+            <p className="font-serif text-xs uppercase tracking-[0.3em] text-amber-700">
+              Administrator Clearance Required
+            </p>
+            <h1 className="mt-3 font-display text-4xl md:text-5xl">Access Restricted</h1>
+            <p className="mt-4 font-serif text-lg text-muted-foreground max-w-xl mx-auto">
+              You are signed in as <strong>{user.full_name}</strong>. The full atelier order registry is reserved for studio administrators. To review your own orders or track a parcel, please visit your account ledger.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/profile"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform hover:scale-105"
+              >
+                View My Profile & Orders
+              </Link>
+              <Link
+                to="/track"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full border border-border bg-card px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-foreground shadow-soft depth-3d hover:bg-secondary"
+              >
+                Track An Order
+              </Link>
+            </div>
+          </div>
+        </section>
+      </SiteLayout>
+    );
+  }
 
   return (
     <SiteLayout>

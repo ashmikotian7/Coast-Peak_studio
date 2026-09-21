@@ -1,9 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Lock, ShieldAlert, ArrowRight, Package } from "lucide-react";
 import { SiteLayout } from "@/components/sk/SiteLayout";
 import { collections, saveProductToCatalog, DEFAULT_CATEGORY_MAP } from "@/lib/products";
 import { useCatalog } from "@/hooks/use-catalog";
+import { useAuth } from "@/contexts/auth-context";
 
 // Helper to render a select dropdown from collections
 function CategorySelect({ value, onChange }: { value: string | number; onChange: (v: string) => void }) {
@@ -27,6 +29,7 @@ function CategorySelect({ value, onChange }: { value: string | number; onChange:
 
 // Main component for the two‑step form
 function AddProductPage() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { upsert } = useCatalog();
   const [step, setStep] = useState<1 | 2>(1);
@@ -70,11 +73,7 @@ function AddProductPage() {
       );
 
       upsert(newProduct);
-      toast.success(
-        newProduct.sku
-          ? `Product added successfully! SKU: ${newProduct.sku}`
-          : "Product added successfully!"
-      );
+      toast.success("Product added successfully!");
       navigate({ to: "/shop" });
     } catch (e) {
       toast.error("Failed to add product.", { description: (e as Error).message });
@@ -82,6 +81,92 @@ function AddProductPage() {
       setIsSaving(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <SiteLayout>
+        <div className="fixed inset-0 -z-10 bg-lavender-gradient" />
+        <div className="flex min-h-[70vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Package className="h-8 w-8 text-[var(--royal)] animate-pulse" />
+            <p className="font-serif text-sm text-muted-foreground">Verifying atelier clearance…</p>
+          </div>
+        </div>
+      </SiteLayout>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <SiteLayout>
+        <div className="fixed inset-0 -z-10 bg-lavender-gradient" />
+        <section className="min-h-screen pt-32 pb-12 md:pt-40">
+          <div className="mx-auto max-w-4xl px-6 text-center md:px-12">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-card border border-border text-[var(--royal)] shadow-soft depth-3d">
+              <Lock className="h-9 w-9" />
+            </div>
+            <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--royal)]">
+              Atelier Access Restricted
+            </p>
+            <h1 className="mt-3 font-display text-4xl md:text-5xl">Sign in to Add Products</h1>
+            <p className="mt-4 font-serif text-lg text-muted-foreground max-w-xl mx-auto">
+              Adding new pieces to the boutique catalog requires an atelier administrator account.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/login"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform hover:scale-105"
+              >
+                Sign In <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full border border-border bg-card px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-foreground shadow-soft depth-3d hover:bg-secondary"
+              >
+                Return to Atelier
+              </Link>
+            </div>
+          </div>
+        </section>
+      </SiteLayout>
+    );
+  }
+
+  if (!user.is_admin) {
+    return (
+      <SiteLayout>
+        <div className="fixed inset-0 -z-10 bg-lavender-gradient" />
+        <section className="min-h-screen pt-32 pb-12 md:pt-40">
+          <div className="mx-auto max-w-4xl px-6 text-center md:px-12">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-600 shadow-soft depth-3d">
+              <ShieldAlert className="h-9 w-9" />
+            </div>
+            <p className="font-serif text-xs uppercase tracking-[0.3em] text-amber-700">
+              Administrator Clearance Required
+            </p>
+            <h1 className="mt-3 font-display text-4xl md:text-5xl">Access Restricted</h1>
+            <p className="mt-4 font-serif text-lg text-muted-foreground max-w-xl mx-auto">
+              You are signed in as <strong>{user.full_name}</strong>. Only atelier administrators are authorized to add new heirloom pieces to the catalog.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/profile"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform hover:scale-105"
+              >
+                View My Profile
+              </Link>
+              <Link
+                to="/shop"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full border border-border bg-card px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-foreground shadow-soft depth-3d hover:bg-secondary"
+              >
+                Browse Shop
+              </Link>
+            </div>
+          </div>
+        </section>
+      </SiteLayout>
+    );
+  }
 
   return (
     <SiteLayout>

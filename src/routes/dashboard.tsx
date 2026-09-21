@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Plus, Pencil, Trash2, RotateCcw, X, Check, Package, Upload, ImageOff, ClipboardList, LogOut } from "lucide-react";
+import { Plus, Pencil, Trash2, RotateCcw, X, Check, Package, Upload, ImageOff, ClipboardList, LogOut, Lock, ShieldAlert, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useCatalog } from "@/hooks/use-catalog";
 import { saveProductToCatalog, updateProductInCatalog, getFallbackImage, compressImageToDataUrl, type Product } from "@/lib/products";
@@ -69,7 +69,7 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 function DashboardPage() {
-  const { logout } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { products, upsert, remove, reset } = useCatalog();
   const [editing, setEditing] = useState<Draft | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
@@ -163,10 +163,10 @@ function DashboardPage() {
           imageBase64
         );
         upsert(updated);
-        toast.success("Piece updated in database");
+        toast.success("Piece updated in catalog!");
       }
       closeEditor();
-    } catch (err) {
+    } catch (err: unknown) {
       toast.error("Failed to save product", {
         description: (err as Error).message,
       });
@@ -174,6 +174,83 @@ function DashboardPage() {
       setIsSaving(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-lavender-gradient">
+        <div className="flex flex-col items-center gap-3">
+          <Package className="h-8 w-8 text-[var(--royal)] animate-pulse" />
+          <p className="font-serif text-sm text-muted-foreground">Verifying atelier authorization…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-lavender-gradient px-6 py-12">
+        <div className="mx-auto max-w-lg text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-card border border-border text-[var(--royal)] shadow-soft depth-3d">
+            <Lock className="h-9 w-9" />
+          </div>
+          <p className="font-serif text-xs uppercase tracking-[0.3em] text-[var(--royal)]">
+            Atelier Management Restricted
+          </p>
+          <h1 className="mt-3 font-display text-4xl">Sign In Required</h1>
+          <p className="mt-4 font-serif text-muted-foreground leading-relaxed">
+            The seller dashboard allows managing atelier inventory, pricing, and catalog pieces. Please sign in with an administrator account to continue.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/login"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform hover:scale-105"
+            >
+              Sign In <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/"
+              className="w-full sm:w-auto inline-flex items-center justify-center rounded-full border border-border bg-card px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.2em] text-foreground shadow-soft depth-3d hover:bg-secondary"
+            >
+              Return Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user.is_admin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-lavender-gradient px-6 py-12">
+        <div className="mx-auto max-w-lg text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-600 shadow-soft depth-3d">
+            <ShieldAlert className="h-9 w-9" />
+          </div>
+          <p className="font-serif text-xs uppercase tracking-[0.3em] text-amber-700">
+            Administrator Clearance Required
+          </p>
+          <h1 className="mt-3 font-display text-4xl">Access Restricted</h1>
+          <p className="mt-4 font-serif text-muted-foreground leading-relaxed">
+            You are signed in as <strong>{user.full_name}</strong>. The atelier catalog management console is reserved for administrators.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/profile"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[var(--royal)] to-[var(--wine)] px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-luxe depth-3d transition-transform hover:scale-105"
+            >
+              Go to My Profile
+            </Link>
+            <Link
+              to="/shop"
+              className="w-full sm:w-auto inline-flex items-center justify-center rounded-full border border-border bg-card px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.2em] text-foreground shadow-soft depth-3d hover:bg-secondary"
+            >
+              Browse Shop
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

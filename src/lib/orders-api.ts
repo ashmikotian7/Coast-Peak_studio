@@ -1,4 +1,4 @@
-import { getAccessToken } from "./auth";
+import { getAccessToken, authenticatedFetch } from "./auth";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
 
@@ -121,16 +121,11 @@ export async function fetchOrdersDropdownAPI(email?: string): Promise<DropdownOr
       url.searchParams.append("email", email.trim());
     }
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    const token = getAccessToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(url.toString(), { headers });
+    const res = await authenticatedFetch(url.toString(), {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
     if (!res.ok) {
       return [];
     }
@@ -152,20 +147,19 @@ export async function fetchOrderTrackingAPI(orderNumber: string): Promise<Tracki
 
     const url = `${API_BASE_URL}/api/orders/track/${encodeURIComponent(cleanNumber)}/`;
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    const token = getAccessToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(url, { headers });
+    const res = await authenticatedFetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
     if (!res.ok) {
       // Try fallback query param
       const queryUrl = `${API_BASE_URL}/api/orders/track/?number=${encodeURIComponent(cleanNumber)}`;
-      const queryRes = await fetch(queryUrl, { headers });
+      const queryRes = await authenticatedFetch(queryUrl, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       if (!queryRes.ok) return null;
       return queryRes.json();
     }
@@ -186,18 +180,11 @@ export async function updateOrderStatusAPI(
   const cleanNumber = orderNumber.replace(/^#/, "").trim();
   const url = `${API_BASE_URL}/api/orders/track/${encodeURIComponent(cleanNumber)}/status/`;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  const token = getAccessToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url, {
+  const res = await authenticatedFetch(url, {
     method: "PATCH",
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ status: newStatus }),
   });
 
@@ -242,16 +229,11 @@ export async function fetchAllOrdersAPI(
       url.searchParams.append("email", filters.email.trim());
     }
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    const token = getAccessToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(url.toString(), { headers });
+    const res = await authenticatedFetch(url.toString(), {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
     if (!res.ok) {
       console.warn(`Failed to fetch orders (${res.status}):`, await res.text());
       return [];
@@ -292,15 +274,7 @@ export interface UserTrackedOrdersResponse {
 export async function trackByCustomerAndProduct(
   params: TrackStatusParams
 ): Promise<TrackingResponse | UserTrackedOrdersResponse> {
-  const token = getAccessToken();
   const url = `${API_BASE_URL}/api/orders/track-status/`;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
 
   const cleanOrderNum = params.orderNumber
     ? params.orderNumber.replace(/^#/, "").trim()
@@ -320,9 +294,11 @@ export async function trackByCustomerAndProduct(
     body.order_number = cleanOrderNum;
   }
 
-  const res = await fetch(url, {
+  const res = await authenticatedFetch(url, {
     method: "POST",
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(body),
   });
 
@@ -396,7 +372,6 @@ export async function fetchOrderHistoryAPI(params?: {
   email?: string;
   status?: string;
 }): Promise<OrderHistoryResponse> {
-  const token = getAccessToken();
   const url = new URL(`${API_BASE_URL}/api/orders/history/`);
 
   if (params?.email) url.searchParams.append("email", params.email.trim());
@@ -404,14 +379,11 @@ export async function fetchOrderHistoryAPI(params?: {
     url.searchParams.append("status", params.status.trim());
   }
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url.toString(), { headers });
+  const res = await authenticatedFetch(url.toString(), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
   if (!res.ok) {
     throw new Error(`Failed to load order history (${res.status})`);
   }

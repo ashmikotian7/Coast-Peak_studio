@@ -66,13 +66,13 @@ export function getRazorpayCredentials(env?: unknown): { keyId: string; keySecre
     (typeof process !== "undefined" && process.env ? process.env.VITE_RAZORPAY_KEY_ID : "") ||
     fileEnv.VITE_RAZORPAY_KEY_ID ||
     (import.meta as unknown as { env?: Record<string, string> })?.env?.VITE_RAZORPAY_KEY_ID ||
-    "rzp_test_Tb5k5uSyScd9xr";
+    "";
 
   const keySecret =
     envRecord.RAZORPAY_KEY_SECRET ||
     (typeof process !== "undefined" && process.env ? process.env.RAZORPAY_KEY_SECRET : "") ||
     fileEnv.RAZORPAY_KEY_SECRET ||
-    "7QZU1ouJgBjp7kn5pam4gv4P";
+    "";
 
   return { keyId, keySecret };
 }
@@ -80,7 +80,9 @@ export function getRazorpayCredentials(env?: unknown): { keyId: string; keySecre
 /**
  * STEP 1: BACKEND - Create Order
  * - Endpoint: POST /api/create-order
- * - Validates amount >= 100 paise
+ * - Validates integer amount between 100 paise (₹1) and 100,000,000 paise (₹10,00,000)
+ * - Validates currency against whitelist (INR, USD)
+ * - Sanitizes receipt identifier
  * - Handles auth failures (401)
  * - Handles Razorpay API errors (500)
  * - Returns { order_id, amount, currency }
@@ -95,23 +97,37 @@ export async function processCreateOrder(
     return {
       status: 401,
       data: {
-        error: "Authentication failed. Razorpay credentials are not configured.",
+        error: "Authentication failed. Razorpay credentials are not configured on server.",
       },
     };
   }
 
   const rawAmount = Number(body.amount);
-  if (isNaN(rawAmount) || rawAmount < 100) {
+  if (!Number.isInteger(rawAmount) || rawAmount < 100 || rawAmount > 100_000_000) {
     return {
       status: 400,
       data: {
-        error: "Invalid amount. Minimum amount is 100 paise (₹1).",
+        error: "Invalid amount. Must be an integer between 100 paise (₹1) and 100,000,000 paise.",
       },
     };
   }
 
-  const currency = body.currency || "INR";
-  const receipt = body.receipt || `rcpt_${Date.now()}`;
+  const rawCurrency = (body.currency || "INR").toUpperCase().trim();
+  const ALLOWED_CURRENCIES = ["INR", "USD"];
+  if (!ALLOWED_CURRENCIES.includes(rawCurrency)) {
+    return {
+      status: 400,
+      data: {
+        error: `Unsupported currency. Allowed: ${ALLOWED_CURRENCIES.join(", ")}`,
+      },
+    };
+  }
+  const currency = rawCurrency;
+
+  const rawReceipt = body.receipt
+    ? String(body.receipt).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40)
+    : "";
+  const receipt = rawReceipt || `rcpt_${Date.now()}`;
 
   try {
     const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`;
@@ -122,7 +138,7 @@ export async function processCreateOrder(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: Math.round(rawAmount),
+        amount: rawAmount,
         currency,
         receipt,
       }),
@@ -149,7 +165,7 @@ export async function processCreateOrder(
       status: 200,
       data: {
         order_id: order.id,
-        amount: order.amount ?? Math.round(rawAmount),
+        amount: order.amount ?? rawAmount,
         currency: order.currency ?? currency,
       },
     };
@@ -168,7 +184,8 @@ export async function processCreateOrder(
  * STEP 3: BACKEND - Verify Signature
  * - Endpoint: POST /api/verify-payment
  * - Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
- * - Validates missing fields (400)
+ * - Timing-attack resistant verification with crypto.timingSafeEqual
+ * - Validates missing & malformed fields (400)
  * - Returns 400 on signature mismatch (do NOT mark as paid)
  * - Returns 200 on success
  */
@@ -179,9 +196,9 @@ export async function processVerifyPayment(
   try {
     const { keySecret } = getRazorpayCredentials(env);
 
-    const orderId = body.razorpay_order_id || body.order_id;
-    const paymentId = body.razorpay_payment_id || body.payment_id;
-    const signature = body.razorpay_signature || body.signature;
+    const orderId = String(body.razorpay_order_id || body.order_id || "").trim();
+    const paymentId = String(body.razorpay_payment_id || body.payment_id || "").trim();
+    const signature = String(body.razorpay_signature || body.signature || "").trim();
 
     if (!orderId || !paymentId || !signature) {
       return {
@@ -189,6 +206,16 @@ export async function processVerifyPayment(
         data: {
           success: false,
           message: "Missing required payment fields: razorpay_order_id, razorpay_payment_id, razorpay_signature",
+        },
+      };
+    }
+
+    if (orderId.length > 100 || paymentId.length > 100 || signature.length > 128) {
+      return {
+        status: 400,
+        data: {
+          success: false,
+          message: "Invalid field length in payment verification payload.",
         },
       };
     }
@@ -209,7 +236,11 @@ export async function processVerifyPayment(
       .update(text)
       .digest("hex");
 
-    const isMatch = generatedSignature === signature;
+    const sigBuf = Buffer.from(signature, "utf8");
+    const genBuf = Buffer.from(generatedSignature, "utf8");
+
+    // Timing-attack safe comparison (constant-time verification)
+    const isMatch = sigBuf.length === genBuf.length && crypto.timingSafeEqual(sigBuf, genBuf);
 
     if (!isMatch) {
       return {
@@ -242,24 +273,32 @@ export async function processVerifyPayment(
   }
 }
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+export function getCorsHeaders(requestOrigin?: string | null): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": requestOrigin || "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+  };
+}
 
 /**
  * Standard Web Request Handler for POST /api/create-order
  */
 export async function handleCreateOrder(request: Request, env?: unknown): Promise<Response> {
+  const origin = request.headers.get("origin");
+  const headers = getCorsHeaders(origin);
+
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers });
   }
 
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      headers: { "Content-Type": "application/json", ...headers },
     });
   }
 
@@ -269,7 +308,7 @@ export async function handleCreateOrder(request: Request, env?: unknown): Promis
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
       status: 400,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      headers: { "Content-Type": "application/json", ...headers },
     });
   }
 
@@ -280,7 +319,7 @@ export async function handleCreateOrder(request: Request, env?: unknown): Promis
 
   return new Response(JSON.stringify(result.data || {}), {
     status: typeof result.status === "number" ? result.status : 500,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    headers: { "Content-Type": "application/json", ...headers },
   });
 }
 
@@ -288,14 +327,17 @@ export async function handleCreateOrder(request: Request, env?: unknown): Promis
  * Standard Web Request Handler for POST /api/verify-payment
  */
 export async function handleVerifyPayment(request: Request, env?: unknown): Promise<Response> {
+  const origin = request.headers.get("origin");
+  const headers = getCorsHeaders(origin);
+
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers });
   }
 
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      headers: { "Content-Type": "application/json", ...headers },
     });
   }
 
@@ -305,7 +347,7 @@ export async function handleVerifyPayment(request: Request, env?: unknown): Prom
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
       status: 400,
-      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      headers: { "Content-Type": "application/json", ...headers },
     });
   }
 
@@ -316,7 +358,7 @@ export async function handleVerifyPayment(request: Request, env?: unknown): Prom
 
   return new Response(JSON.stringify(result.data || {}), {
     status: typeof result.status === "number" ? result.status : 500,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    headers: { "Content-Type": "application/json", ...headers },
   });
 }
 
@@ -324,17 +366,24 @@ export async function handleVerifyPayment(request: Request, env?: unknown): Prom
  * Connect/Node Middleware for Vite dev server
  */
 export function razorpayDevMiddleware(
-  req: { url?: string; method?: string; on: (event: string, cb: (chunk?: unknown) => void) => void },
+  req: { url?: string; method?: string; headers?: Record<string, string | string[] | undefined>; on: (event: string, cb: (chunk?: unknown) => void) => void },
   res: { statusCode: number; setHeader: (k: string, v: string) => void; end: (content: string) => void },
   next: () => void
 ) {
   const url = req.url ? new URL(req.url, "http://localhost").pathname : "";
 
-  if (req.method === "OPTIONS" && (url === "/api/create-order" || url === "/api/verify-payment")) {
-    res.statusCode = 204;
+  const applySecurityHeaders = () => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  };
+
+  if (req.method === "OPTIONS" && (url === "/api/create-order" || url === "/api/verify-payment")) {
+    res.statusCode = 204;
+    applySecurityHeaders();
     res.end("");
     return;
   }
@@ -353,13 +402,13 @@ export function razorpayDevMiddleware(
         };
         res.statusCode = typeof result.status === "number" ? result.status : 500;
         res.setHeader("Content-Type", "application/json");
-        res.setHeader("Access-Control-Allow-Origin", "*");
+        applySecurityHeaders();
         res.end(JSON.stringify(result.data || {}));
       } catch (err: unknown) {
         const msg = (err as Error)?.message || "Internal server error";
         res.statusCode = 500;
         res.setHeader("Content-Type", "application/json");
-        res.setHeader("Access-Control-Allow-Origin", "*");
+        applySecurityHeaders();
         res.end(JSON.stringify({ error: msg }));
       }
     });
@@ -380,13 +429,13 @@ export function razorpayDevMiddleware(
         };
         res.statusCode = typeof result.status === "number" ? result.status : 500;
         res.setHeader("Content-Type", "application/json");
-        res.setHeader("Access-Control-Allow-Origin", "*");
+        applySecurityHeaders();
         res.end(JSON.stringify(result.data || {}));
       } catch (err: unknown) {
         const msg = (err as Error)?.message || "Internal server error";
         res.statusCode = 500;
         res.setHeader("Content-Type", "application/json");
-        res.setHeader("Access-Control-Allow-Origin", "*");
+        applySecurityHeaders();
         res.end(JSON.stringify({ error: msg }));
       }
     });

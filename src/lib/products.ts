@@ -2,7 +2,7 @@ import earrings from "@/assets/product-earrings.jpg";
 import necklace from "@/assets/product-necklace.jpg";
 import rings from "@/assets/product-rings.jpg";
 import bracelet from "@/assets/product-bracelet.jpg";
-import { getAccessToken } from "./auth";
+import { getAccessToken, authenticatedFetch } from "./auth";
 
 export type Product = {
   id: string;
@@ -132,7 +132,7 @@ async function parseResponseError(response: Response, defaultMsg = "Operation fa
 }
 
 export async function deleteProductFromAPI(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/products/items/${id}/`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/products/items/${id}/`, {
     method: "DELETE",
   });
   if (!response.ok && response.status !== 204) {
@@ -212,7 +212,7 @@ export async function updateProductInCatalog(
     formData.append("image_base64", imageBase64);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/products/items/${id}/`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/products/items/${id}/`, {
     method: "PATCH",
     body: formData,
   });
@@ -270,15 +270,8 @@ export async function saveProductToCatalog(
     formData.append("image_base64", step2ImageBase64);
   }
 
-  const token = getAccessToken();
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/products/items/`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/api/products/items/`, {
     method: "POST",
-    headers,
     body: formData,
   });
 
@@ -305,7 +298,7 @@ export async function saveProductToCatalog(
 
 export async function createProduct(formData: FormData): Promise<Product> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/products/items/`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/products/items/`, {
       method: "POST",
       body: formData,
     });

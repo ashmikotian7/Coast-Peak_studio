@@ -45,9 +45,24 @@ function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      toast.error("Email required", { description: "Please enter your email address." });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      toast.error("Invalid email format", { description: "Please enter a valid email address." });
+      return;
+    }
+    if (!password) {
+      toast.error("Password required", { description: "Please enter your password." });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await login(email, password);
+      await login(cleanEmail, password);
     } catch (error) {
       toast.error("Login failed", {
         description: error instanceof Error ? error.message : "An error occurred. Please check your credentials.",
@@ -57,10 +72,10 @@ function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async (email: string, fullName: string) => {
+  const handleGoogleLogin = async (email: string, fullName: string, googleToken?: string) => {
     setIsLoading(true);
     try {
-      await loginWithGoogle(email, fullName);
+      await loginWithGoogle(email, fullName, googleToken);
     } catch (error) {
       toast.error("Google login failed", {
         description: error instanceof Error ? error.message : "An error occurred.",
@@ -98,7 +113,7 @@ export function AuthShell({
   title: string; subtitle: string; badge?: string; cta: string; alt: React.ReactNode;
   forgot?: boolean; google?: boolean;
   onSubmit?: (e: React.FormEvent) => void;
-  onGoogleSubmit?: (email: string, fullName: string) => void;
+  onGoogleSubmit?: (email: string, fullName: string, googleToken?: string) => void;
   isLoading?: boolean;
   email?: string;
   onEmailChange?: (email: string) => void;

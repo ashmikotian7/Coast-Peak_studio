@@ -33,6 +33,9 @@ export interface GoogleSignupPayload {
   signup_type: "google";
   full_name: string;
   email: string;
+  google_token?: string;
+  credential?: string;
+  id_token?: string;
 }
 
 export interface DirectLoginPayload {
@@ -44,9 +47,78 @@ export interface DirectLoginPayload {
 export interface GoogleLoginPayload {
   login_type: "google";
   email: string;
+  google_token?: string;
+  credential?: string;
+  id_token?: string;
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
+
+export async function refreshTokenAPI(): Promise<string | null> {
+  const refresh = getRefreshToken();
+  if (!refresh) return null;
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!res.ok) {
+      clearAuthTokens();
+      return null;
+    }
+    const data = await res.json();
+    if (data && data.access) {
+      setAuthTokens(data.access, data.refresh || refresh);
+      return data.access;
+    }
+    return null;
+  } catch (err) {
+    console.warn("Token refresh failed:", err);
+    return null;
+  }
+}
+
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+export async function authenticatedFetch(
+  url: string | URL,
+  options: RequestInit = {}
+): Promise<Response> {
+  let token = getAccessToken();
+  const headers = new Headers(options.headers || {});
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  let response = await fetch(url.toString(), {
+    ...options,
+    headers,
+  });
+
+  if (response.status === 401 && getRefreshToken()) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = refreshTokenAPI().finally(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      });
+    }
+
+    const newToken = await (refreshPromise || refreshTokenAPI());
+    if (newToken) {
+      const retryHeaders = new Headers(options.headers || {});
+      retryHeaders.set("Authorization", `Bearer ${newToken}`);
+      response = await fetch(url.toString(), {
+        ...options,
+        headers: retryHeaders,
+      });
+    }
+  }
+
+  return response;
+}
 
 async function apiRequest<T>(
   endpoint: string,
@@ -54,7 +126,7 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const response = await fetch(url, {
+  const response = await authenticatedFetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",

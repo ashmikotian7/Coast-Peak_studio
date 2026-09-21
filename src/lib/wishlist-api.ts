@@ -1,32 +1,32 @@
-import { getAccessToken } from "./auth";
-import { getFallbackImage, type Product } from "./products";
+import { getAccessToken, authenticatedFetch } from "./auth";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://coast-peak-studio.onrender.com").replace(/\/+$/, "");
 
-export interface WishlistProduct {
-  id: string | number;
+export interface WishlistItemProduct {
+  id: string;
   name: string;
   price: number;
   image: string;
-  category_slug?: string;
-  stock?: number;
+  category: "earrings" | "necklaces" | "rings" | "bracelets";
+  tag?: "new" | "bestseller" | "limited";
+  description: string;
+  stock: number;
 }
 
 export interface WishlistItemResponse {
   id: number;
-  added_at: string;
-  product: WishlistProduct;
+  product: WishlistItemProduct;
+  created_at: string;
 }
 
-export interface WishlistResponse {
+export interface WishlistListResponse {
   count: number;
   items: WishlistItemResponse[];
-  product_ids: string[];
 }
 
-export interface ToggleWishlistResponse {
+export interface AddToWishlistResponse {
+  id: number;
   product_id: string;
-  wished: boolean;
   message?: string;
 }
 
@@ -40,11 +40,10 @@ async function wishlistFetch<T>(endpoint: string, options: RequestInit = {}): Pr
     throw new Error("User is not authenticated");
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });
